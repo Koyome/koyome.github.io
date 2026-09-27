@@ -146,7 +146,7 @@ const server = http.createServer(async (req, res) => {
 
   /* ================= Content API ================= */
   if (url.pathname === '/api/content' && req.method === 'GET') {
-    res.writeHead(200, MIME['.json']);
+    res.writeHead(200, { 'Content-Type': MIME['.json'], 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify(loadContent().map(normalizeEntry)));
   }
 
@@ -333,7 +333,7 @@ const server = http.createServer(async (req, res) => {
 
   /* ================= Profile API (homepage) ================= */
   if (url.pathname === '/api/profile' && req.method === 'GET') {
-    res.writeHead(200, MIME['.json']);
+    res.writeHead(200, { 'Content-Type': MIME['.json'], 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify(loadProfile()));
   }
 
@@ -369,7 +369,7 @@ const server = http.createServer(async (req, res) => {
 
   /* ================= Hobbies API ================= */
   if (url.pathname === '/api/hobbies' && req.method === 'GET') {
-    res.writeHead(200, MIME['.json']);
+    res.writeHead(200, { 'Content-Type': MIME['.json'], 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify(loadHobbies()));
   }
 
@@ -430,7 +430,7 @@ const server = http.createServer(async (req, res) => {
 
   /* ================= Guestbook API ================= */
   if (url.pathname === '/api/guestbook' && req.method === 'GET') {
-    res.writeHead(200, MIME['.json']);
+    res.writeHead(200, { 'Content-Type': MIME['.json'], 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify(loadGuestbook()));
   }
 
@@ -472,13 +472,18 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end('<meta charset="utf-8">404 · nothing has grown here yet · 這裡還沒長出東西來 · <a href="/">back home / 回到首頁</a>');
     }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream' });
+    /* 本地开发用：允许桌面测试页（file:// 或 127.0.0.1 其他端口）跨域取静态资源。
+       本机服务只监听本机，风险可忽略；线上是 GitHub Pages，不涉及。 */
+    res.writeHead(200, {
+      'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
+      'Access-Control-Allow-Origin': '*',
+    });
     res.end(buf);
   });
 });
 
 function send(res, code, obj) {
-  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
   res.end(JSON.stringify(obj));
 }
 

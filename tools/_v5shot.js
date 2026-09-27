@@ -1,0 +1,32 @@
+const http=require('http'),fs=require('fs'),path=require('path');const{spawn}=require('child_process');
+const PUB=path.join(__dirname,'..','docs');
+const EDGE='C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+const MIME={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.glb':'model/gltf-binary'};
+const srv=http.createServer((req,res)=>{const p=decodeURIComponent(req.url.split('?')[0]);const f=path.join(PUB,p==='/'?'/_v5preview.html':p);if(!f.startsWith(PUB)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':MIME[path.extname(f).toLowerCase()]||'application/octet-stream'});fs.createReadStream(f).pipe(res);});
+let id=0;const send=(ws,m,p={},s)=>new Promise((res,rej)=>{const i=++id;const on=(ev)=>{const x=JSON.parse(ev.data);if(x.id===i){ws.removeEventListener('message',on);x.error?rej(new Error(x.error.message)):res(x.result);}};ws.addEventListener('message',on);ws.send(JSON.stringify({id:i,method:m,params:p,sessionId:s}));});
+(async()=>{
+  await new Promise(r=>srv.listen(8921,r));
+  const edge=spawn(EDGE,['--headless=new','--remote-debugging-port=9325','--no-first-run','--window-size=1440,1000','about:blank'],{stdio:'ignore'});
+  let wsUrl;for(let i=0;i<40;i++){try{wsUrl=(await(await fetch('http://127.0.0.1:9325/json/version')).json()).webSocketDebuggerUrl;break;}catch{await sleep(300);}}
+  const ws=new WebSocket(wsUrl);await new Promise(r=>ws.onopen=r);
+  const{targetId}=await send(ws,'Target.createTarget',{url:'about:blank'});
+  const{sessionId:sid}=await send(ws,'Target.attachToTarget',{targetId,flatten:true});
+  await send(ws,'Page.enable',{},sid);await send(ws,'Runtime.enable',{},sid);
+  await send(ws,'Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false},sid);
+  await send(ws,'Page.navigate',{url:'http://127.0.0.1:8921/_v5preview.html'},sid);
+  const ev=async(e)=>(await send(ws,'Runtime.evaluate',{expression:e,returnByValue:true,awaitPromise:true},sid)).result.value;
+  await ev(`new Promise(r=>{const v=document.getElementById('figViewer');v.addEventListener('load',()=>r(1));setTimeout(()=>r(0),60000)})`);
+  await ev(`document.querySelector('.fig-stage').scrollIntoView({block:'center'})`);
+  await sleep(1200);
+  const cam=async(t,o,ms)=>{await ev(`(()=>{const v=document.getElementById('figViewer');v.cameraTarget='${t}';v.cameraOrbit='${o}';v.jumpCameraToGoal();return 1})()`);await sleep(ms||1000);};
+  const shot=async(n)=>{const s=await send(ws,'Page.captureScreenshot',{format:'png'},sid);fs.writeFileSync(path.join(__dirname,'shots-figure',n),Buffer.from(s.data,'base64'));};
+  const c=await ev(`(()=>{const v=document.getElementById('figViewer');const b=v.getBoundingBoxCenter();return b.x+','+b.y+','+b.z})()`);
+  const[cx,cy,cz]=c.split(',').map(Number);
+  await cam(`${cx}m ${cy}m ${cz}m`,'8deg 80deg 2.4m');await shot('v5-full.png');
+  await cam(`${cx}m ${cy*1.62}m ${cz}m`,'8deg 84deg 0.5m');await shot('v5-face.png');
+  await cam(`${cx}m ${cy*0.95}m ${cz+0.15}m`,'15deg 78deg 0.7m');await shot('v5-hands.png');
+  await cam(`${cx}m ${cy}m ${cz}m`,'185deg 78deg 2.2m');await shot('v5-back.png');
+  console.log('v3 shots ok, center',c);
+  edge.kill();srv.close();process.exit(0);
+})();

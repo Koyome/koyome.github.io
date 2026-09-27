@@ -1,8 +1,23 @@
 # Koyome.me — 项目交接文档（AI Handover）
 
 > 写给下一个接管本项目的 AI（或人类开发者）：**读完这一份，即拥有继续开发的全部上下文。**
-> 最后更新：2026-09-26（第二十七轮：kstage 真交互 Canvas 装置——浑天仪 / 月相台 / 晶体，已取代 R25–R26 的线稿与 CSS 3D）**R25–R27 均未推送，也尚未接入任何页面**
-> 仓库状态：本地 HEAD = 本轮提交（见 `git log`）；**远端 main 仍在 `6a916d1`——R20、R21、R22、R23（本轮）四轮改动均在本地，待用户一键脚本推送** ｜ ⚠️ 常驻推送授权**已于 2026-09-23 取消**：AI 推送前必须逐次征得用户同意（§4.3）
+> 最后更新：2026-09-27（第二十八轮：桌面测试服 `kstage-preview.html` 增设人偶节；`server.js` 为本地跨域测试加 CORS 头）
+> 仓库状态：本地 HEAD = `4e8dc46`，**远端 main 与之相同**（09-26 20:37 用户一键推送，R20–R24 已上线）｜ ⚠️ 常驻推送授权**已于 2026-09-23 取消**：AI 推送前必须逐次征得用户同意（§4.3）
+
+---
+
+## 0.28 第二十八轮速览（2026-09-27）：桌面「测试服」
+
+- **用户诉求**：把本地站的**人偶页移植到桌面 `C:\Users\杨坤\Desktop\kstage-preview.html`**，该文件当"测试服"用。
+- **桌面测试页现状**：自包含（kstage.css + kstage.js 全部内联，零外链），含六台 kstage 装置 + 控制台（主题/时间/图层/复位/导出 PNG）。本轮在其末尾新增**第 07 节 FIGURE · 3D 测试台**：
+  - **模型切换器**：8 个 GLB 全部列出（含体积/面数/贴图数注释）——正是"选哪个模型上线上"的决策台。
+  - model-viewer 参数与 `docs/figure.html` **完全一致**（camera-orbit `12deg 78deg auto`、fov/target 复位三件套、exposure 1.05、shadow-intensity 1、min/max orbit 5%–500%、双击/按钮复位、切换模型即重载）。
+  - **资源全部取自本机服务** `http://Koyome.me/`：file:// 页面既不能加载 ES module 也不能 fetch 本地 GLB，所以必须走 http；服务未起时显示明确提示（双击 `start-hidden.vbs` 后按"重试连接"）。
+- **`server.js` 改动（本轮唯一站点改动）**：静态响应 + 4 处 JSON GET + `send()` 全部加 `Access-Control-Allow-Origin: *`（仅本地开发便利；线上是 Pages，不涉及）。**API 改动 = 必须重启本机服务才生效**（§4.2）。
+- **验证**：无头 Edge 实测（`--no-proxy-server`，本机失效代理会让 Koyome.me ERR_CONNECTION_REFUSED，§4.4）——module 载入 → `customElements` 就绪 → GLB 4s 载入完成、`loaded:true`、遮罩隐藏、**console 零报错**；切换到 v8 同样就绪；截图确认模型真实渲染。站点回归：首页 + figure/catalog/entry/hobbies/guestbook/admin + kstage.js + GLB 全 200。
+- **8 个 GLB 规格（本轮实测，供选型）**：v1 = eris-figure.glb（32.4MB/20 万面/12.6 万顶点/3 贴图，Blender 直出）；v3 43.3MB/50 万面/3 贴图；v4 40.9MB/50 万/3；v5 32.3MB/50 万/1；v6 40.7MB/48.7 万/4；v7 23.3MB/50 万/3（glTF-Transform 压缩）；v8 21.3MB/50 万/2（最小）。**全部无骨骼无动画**。
+- **⚠️ 随后用户裁定：把人偶从站点移除（2026-09-27 同日）**。已删：`docs/figure.html` 与同批临时预览页 `docs/_v4preview/_v5preview/_v6preview/_v8compare.html`；已去：`header.js` 的 figure 导航项、`i18n.js` 三语字典里的 `title_figure/nav_figure/fig_*` 全部词条（注意 `home_fig_note_ph` 是首页人像注释，与人偶无关，保留）。**保留**：`docs/assets/*.glb`（硬规则不删素材）、`docs/components/model-viewer.min.js`（桌面测试服要用）。验证：figure.html → 404；其余页 200；导航只剩 index/catalog/hobbies/guestbook(+站长 admin)；i18n 审计三字典各 182 键一致；jsdom 回归 58/58 全绿。**桌面测试服不受影响**（它不依赖 figure.html，只依赖 model-viewer + GLB）。
+- **未提交、未推送**（§4.3 需用户逐次同意）。
 
 ---
 
