@@ -324,7 +324,8 @@ img { max-width: 100%; display: block; }
   display: flex; flex-direction: column; align-items: center;
   gap: 22px; width: 100%;
 }
-.sigil { position: relative; width: min(430px, 78vw); flex: 0 0 auto; }
+/* 86vw 是上限：手机端两侧还各留 22px 内边距，所以绝不会顶出屏幕 */
+.sigil { position: relative; width: min(480px, 86vw); flex: 0 0 auto; }
 /* still used by the hero's satellite orbits — keep it */
 @keyframes slow-spin-rev { to { transform: rotate(-360deg); } }
 
@@ -390,6 +391,34 @@ img { max-width: 100%; display: block; }
 .sigil-pins button:hover { color: var(--accent); border-color: var(--accent); }
 .sigil-pins button.on { color: var(--accent); border-color: var(--accent); border-style: solid; }
 .sigil-pins button:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+/* ---- 彩蛋字幕：成员台词 / 重合提示 / 冈部×红莉栖对话 ----
+   放在仪器下方，pointer-events:none —— 绝不抢它上面那块画布的手势 */
+.sigil-egg {
+  margin: 2px 0 0; max-width: min(460px, 88vw);
+  text-align: center; font-family: var(--mono);
+  font-size: 10.5px; letter-spacing: 0.18em; line-height: 2;
+  color: var(--muted); pointer-events: none;
+  opacity: 0; transform: translateY(3px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.sigil-egg.show { opacity: 1; transform: none; }
+.sigil-egg.is-egg { color: var(--accent); }
+.sigil-egg .who { opacity: .55; margin-right: .6em; }
+@media (prefers-reduced-motion: reduce) {
+  .sigil-egg { transition: none; }
+}
+
+/* owner-only: freeze the current camera as the default view */
+.sigil-view { display: inline-flex; gap: 8px; margin-left: 4px; }
+.sigil-view[hidden] { display: none; }
+.sigil-view button {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+  padding: 5px 12px 5px 10px; background: transparent;
+  border: 1px dashed var(--line); color: var(--muted);
+  cursor: pointer;
+}
+.sigil-view button:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ---- owner-editable caption, bottom-right of the block ----
    same editing language as the portrait note: dashed rule when empty,

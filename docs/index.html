@@ -10,7 +10,7 @@
        tokens, and style.css must be able to re-point those tokens at the
        site's own variables (see .sigil-orrery in css/style.css). -->
   <link rel="stylesheet" href="components/kstage.css?v=202609262104" />
-  <link rel="stylesheet" href="css/style.css?v=202609271353" />
+  <link rel="stylesheet" href="css/style.css?v=202609281917" />
 </head>
 <body data-page="home" data-title-key="title_home">
 
@@ -258,6 +258,18 @@
       <button type="button" data-member="4">004 红莉栖</button>
       <button type="button" data-member="5">008 铃羽</button>
     </div>
+    <!-- owner only (unhidden by js/main.js when the API proves this is
+         the management machine): freeze the current camera as the
+         default view everyone else gets. 刻意放在成员按钮行之外，
+         免得那一行的"五个成员按钮"语义被污染。 -->
+    <span class="sigil-view" id="sigilView" hidden>
+      <button type="button" id="sigSaveView" data-i18n="sig_save_view">保存视角</button>
+      <button type="button" id="sigClearView" data-i18n="sig_clear_view">清除视角</button>
+    </span>
+    <!-- easter-egg line: member quotes, the alignment hint and the
+         Okabe × Kurisu exchange land here. pointer-events:none, so it
+         can never steal a drag from the sphere above it. -->
+    <p class="sigil-egg" id="sigilEgg" hidden aria-live="polite"></p>
     <!-- bottom-right of the block: a caption the owner can edit in place
          (double-click). Empty = hidden for visitors. -->
     <div class="sigil-note" id="sigilNote" hidden></div>
@@ -270,10 +282,10 @@
     <span data-i18n="footer">© 2026 KOYOME. ALL RIGHTS RESERVED.</span> &nbsp;·&nbsp; <span class="addr">KOYOME.ME</span>
   </footer>
 
-  <script src="js/i18n.js?v=202609271353"></script>
-  <script src="js/header.js?v=202609271353"></script>
-  <script src="js/data.js?v=202609271353"></script>
-  <script src="js/deco.js?v=202609271353"></script>
-  <script src="js/main.js?v=202609271353"></script>
+  <script src="js/i18n.js?v=202609281917"></script>
+  <script src="js/header.js?v=202609281917"></script>
+  <script src="js/data.js?v=202609281917"></script>
+  <script src="js/deco.js?v=202609281917"></script>
+  <script src="js/main.js?v=202609281917"></script>
 </body>
 </html>

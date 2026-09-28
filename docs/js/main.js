@@ -177,6 +177,7 @@
       note.textContent = v || t('home_arm_note_ph');
     };
     show(text);
+    setupOrreryView(profile);          /* 套用已保存的展示视角 + 站长按钮 */
     if (!owner) return;
 
     note.classList.add('editable');
@@ -366,6 +367,206 @@
     });
   }
 
+  /* ================= 浑天仪彩蛋 =================
+     台词与互动都落在仪器下方那条字幕里（pointer-events:none，绝不抢手势）：
+       · 锁定某个成员（按钮 / 点星 / 数字键）→ 显示他的台词
+       · 冈部与红莉栖两星垂直重合 → 提示"按复位键触发彩蛋"
+       · 此时按复位键（画布右下角 R 或键盘 R）→ 播放两人对话 */
+  const EGG_KEY = { 1: 'egg_okabe', 2: 'egg_daru', 3: 'egg_mayuri', 4: 'egg_kurisu', 5: 'egg_suzuha' };
+
+  /* 一条字幕，两个互不干扰的通道 —— 早期版本让两者靠定时器抢同一个元素，
+     结果台词刚显示就被提示逻辑收掉（探针实测：pin2/pin4 点完是空的）。
+     现在：台词通道播完自动让位；提示通道持续显示，遇到台词就暂时退下。 */
+  var eggT = { q1: 0, q2: 0, fade: 0 };
+  var eggQuoteSeq = 0;      /* 作废上一串待播台词 */
+  var eggQuoteUntil = 0;    /* 台词占用字幕的截止时间 */
+  var eggAligned = false;   /* 当前两星是否重合 */
+  var eggHintOn = false;    /* 提示是否正在显示 */
+
+  function eggEl() { return document.getElementById('sigilEgg'); }
+  function paint(text, cls) {
+    var el = eggEl(); if (!el) return;
+    clearTimeout(eggT.fade);
+    el.hidden = false;
+    el.className = 'sigil-egg show' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+  }
+  function fade() {
+    var el = eggEl(); if (!el) return;
+    el.classList.remove('show');
+    clearTimeout(eggT.fade);
+    eggT.fade = setTimeout(function () {
+      if (!el.classList.contains('show')) { el.hidden = true; el.textContent = ''; }
+    }, 420);
+  }
+  /* 播一串台词（1~2 句）；播完若仍重合则补上提示 */
+  function sayQuote(lines) {
+    var my = ++eggQuoteSeq;
+    clearTimeout(eggT.q1); clearTimeout(eggT.q2);
+    paint(lines[0][0], 'is-egg');
+    eggQuoteUntil = Date.now() + lines[0][1];
+    eggT.q1 = setTimeout(function () {
+      if (my !== eggQuoteSeq) return;
+      if (lines.length > 1) {
+        paint(lines[1][0], 'is-egg');
+        eggQuoteUntil = Date.now() + lines[1][1];
+        eggT.q2 = setTimeout(function () {
+          if (my !== eggQuoteSeq) return;
+          eggQuoteUntil = 0;
+          if (eggAligned) showHint(); else fade();
+        }, lines[1][1]);
+      } else {
+        eggQuoteUntil = 0;
+        if (eggAligned) showHint(); else fade();
+      }
+    }, lines[0][1]);
+  }
+  function showHint() {
+    if (Date.now() < eggQuoteUntil) return;      /* 台词在播，不抢位 */
+    paint(t('egg_hint'), 'is-egg');
+    eggHintOn = true;
+  }
+  function clearHint() {
+    if (!eggHintOn) return;
+    eggHintOn = false;
+    if (Date.now() < eggQuoteUntil) return;      /* 字幕正被台词占用 */
+    fade();
+  }
+  function stopQuote() {
+    eggQuoteSeq++;                              /* 作废待播的第二句 */
+    clearTimeout(eggT.q1); clearTimeout(eggT.q2);
+    eggQuoteUntil = 0;
+  }
+  /* 对外：一次性短消息（视角保存提示等） */
+  function showEgg(text, cls, ms) { sayQuote([[text, ms || 2600]]); }
+
+  /* 每次显示都领一个序号：延时播出的第二句若已过期就作废。
+     没有这个令牌，真由理的第二句会盖掉后面点到的人（探针实测到的 bug） */
+  function showEgg(text, cls, ms, seq) {
+    const el = document.getElementById('sigilEgg');
+    if (!el) return;
+    if (seq != null && seq !== eggSeq) return;
+    clearTimeout(eggT1); clearTimeout(eggT2);
+    el.hidden = false;
+    el.className = 'sigil-egg show' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+    eggBusyUntil = ms ? Date.now() + ms : 0;      /* 台词占用期间，提示不抢位 */
+    if (ms) {
+      const my = eggSeq;
+      eggT1 = setTimeout(function () {
+        if (my !== eggSeq) return;
+        el.classList.remove('show');
+        eggT2 = setTimeout(function () { if (!el.classList.contains('show')) el.hidden = true; }, 420);
+      }, ms);
+    }
+  }
+  function memberQuote(n) {
+    const k = EGG_KEY[n];
+    if (!k) return;
+    /* 真由理说两句 */
+    if (n === 3) { sayQuote([[t('egg_mayuri'), 2200], [t('egg_mayuri2'), 5000]]); return; }
+    sayQuote([[t(k), 5200]]);
+  }
+  function playDuo() {
+    sayQuote([[t('egg_duo_a'), 3800], [t('egg_duo_b'), 5600]]);
+  }
+
+  /* 轮询装置状态（不侵入 canvas 的事件）：
+     锁定变化 → 台词；重合 → 提示；重合时复位 → 对话彩蛋 */
+  function watchOrreryEggs() {
+    var lastSeq = -1, lastLock = -2, wasAligned = false;
+    setInterval(function () {
+      var el = document.querySelector('.sigil-orrery');
+      var st = el && el.__kstage;
+      if (!st || !st.impl || !st.impl.egg) return;
+      var s = st.impl.egg();
+
+      /* 锁定变化 → 台词；取消锁定 → 收回台词（若仍重合则显示提示） */
+      if (s.lock !== lastLock) {
+        lastLock = s.lock;
+        if (s.lock >= 0) memberQuote(s.lock + 1);     /* 001-008 → 1-5 */
+        else {
+          stopQuote();
+          if (s.aligned) showHint(); else fade();
+        }
+      }
+      if (s.aligned !== wasAligned) {
+        wasAligned = s.aligned;
+        eggAligned = s.aligned;
+        if (s.aligned) showHint(); else clearHint();
+      }
+
+      if (lastSeq < 0) { lastSeq = s.homeSeq; return; }
+      if (s.homeSeq !== lastSeq) {
+        lastSeq = s.homeSeq;
+        /* 用"按下复位键那一刻"的对齐状态判定（相机复位后两星可能已错开） */
+        if (s.homeAligned) playDuo();
+      }
+    }, 240);
+  }
+
+  /* ================= 自定义展示视角 =================
+     站长把当前相机姿态存进 profile.orreryView（yaw,pitch,dist），
+     随内容一起 commit/push；游客打开首页就看到这个视角。 */
+  function parseView(s) {
+    var a = String(s || '').split(',');
+    if (a.length < 3) return null;
+    var n = a.map(Number);
+    if (n.some(function (x) { return !isFinite(x); })) return null;
+    return { yaw: n[0], pitch: n[1], dist: n[2] };
+  }
+  async function setupOrreryView(profile) {
+    var wrap = document.getElementById('sigilView');
+    var host = document.querySelector('.sigil-orrery');
+    var stOf = function () { return (host && host.__kstage) || null; };
+
+    var saved = parseView(profile && profile.orreryView);
+    if (saved) {
+      /* 装置可能是懒加载的：反复套几次直到它真的活着 */
+      var tries = 0;
+      var iv = setInterval(function () {
+        var st = stOf();
+        if (st && st.impl && st.impl.setPose) {
+          st.impl.setPose(saved); st.dirty = true; st.kick();
+          if (++tries > 25) clearInterval(iv);
+        } else if (++tries > 80) clearInterval(iv);
+      }, 150);
+    }
+
+    var owner = false;
+    try { owner = await apiAvailable(); } catch (_) { owner = false; }
+    if (!owner || !wrap) return;
+    wrap.hidden = false;
+
+    var post = async function (obj, okMsg) {
+      try {
+        var r = await fetch('api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(obj),
+        });
+        if (!r.ok) throw new Error('fail');
+        showEgg(okMsg, '', 2800);
+        return true;
+      } catch (_) { showEgg('保存失败 · 本机服务是否在运行？', '', 3200); return false; }
+    };
+    var saveBtn = document.getElementById('sigSaveView');
+    var clearBtn = document.getElementById('sigClearView');
+    if (saveBtn) saveBtn.addEventListener('click', async function () {
+      var st = stOf();
+      if (!st || !st.impl || !st.impl.pose) { showEgg('装置还没就绪', '', 2400); return; }
+      var p = st.impl.pose();
+      var v = [p.yaw, p.pitch, p.dist].map(function (n) { return (+n).toFixed(3); }).join(',');
+      await post({ orreryView: v }, t('sig_view_saved'));
+    });
+    if (clearBtn) clearBtn.addEventListener('click', async function () {
+      var ok = await post({ orreryView: '' }, t('sig_view_cleared'));
+      if (!ok) return;
+      var st = stOf();
+      if (st && st.impl && st.impl.setPose) { st.impl.setPose({ yaw: -0.62, pitch: 0.44, dist: 3.4 }); st.dirty = true; st.kick(); }
+    });
+  }
+
   /* Arm the armillary only once the page has its real height. Watching it
      any earlier is a trap: the catalog and hobbies strips are still empty,
      the document is short, the sigil falls inside the observer margin and
@@ -382,4 +583,5 @@
   Promise.all([render(), renderCatalog(), renderHobbies()]).then(armSigil, armSigil);
   setTimeout(armSigil, 1200);
   wireOrreryPins();
+  watchOrreryEggs();      /* 台词 / 重合提示 / 复位触发的对话 */
 })();

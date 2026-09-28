@@ -49,6 +49,8 @@ const DEFAULT_PROFILE = {
   introZh: '我是 Koyome，這裡是我在網路上的一小塊地。\n\n值得重讀的文字、值得多看兩眼的畫面，還有不想忘記的影片，我都放在這裡。這裡的東西都還沒完成，也沒有任何東西在趕路。\n\n隨便逛逛——想待多久都可以。',
   armNote: '',
   armNoteZh: '',
+  /* 首页浑天仪的默认展示视角："yaw,pitch,dist"（站长在页面上保存，随内容推送） */
+  orreryView: '',
   avatar: '/assets/avatar.jpg',
 };
 
@@ -352,6 +354,7 @@ const server = http.createServer(async (req, res) => {
         figNoteZh: body.figNoteZh != null ? str(body.figNoteZh, 200) : current.figNoteZh,
         armNote: body.armNote != null ? str(body.armNote, 1000) : current.armNote,
         armNoteZh: body.armNoteZh != null ? str(body.armNoteZh, 1000) : current.armNoteZh,
+      orreryView: body.orreryView != null ? str(body.orreryView, 60) : current.orreryView,
         avatar: current.avatar,
       };
       if (body.avatarFile) {

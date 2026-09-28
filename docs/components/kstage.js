@@ -110,6 +110,19 @@
       if (Math.abs(this.vpitch) < 1e-4) this.vpitch = 0;
     }
   };
+  /* 平滑缩放：滚轮/捏合只改目标值，实际 dist 每帧向目标缓动（帧率无关）。
+     直接改 dist 会让缩放一格一格跳，手感生硬。 */
+  Camera.prototype.zoomStep = function (d, lo, hi) {
+    var base = (this.dTarget == null) ? this.dist : this.dTarget;
+    this.dTarget = clamp(base + d, lo, hi);
+  };
+  Camera.prototype.slideZoom = function (dt) {
+    if (this.dTarget == null) return false;
+    var k = 1 - Math.pow(0.0002, dt);          /* ~0.6s 收敛，与帧率无关 */
+    this.dist += (this.dTarget - this.dist) * k;
+    if (Math.abs(this.dTarget - this.dist) < 0.0015) { this.dist = this.dTarget; this.dTarget = null; }
+    return true;
+  };
 
   /* ---------- 自动取景 ----------
      把装置内容的采样点投到当前镜头上，解出"刚好完整装进画布"的
@@ -404,6 +417,18 @@
       self.visible = !document.hidden;
       if (self.visible) { self.last = 0; self.kick(); }
     });
+    /* 触屏滑动页面 → 冻结本装置的重绘（滑完 140ms 自动唤醒）。
+       触屏上"边滑边重画"是掉帧的头号来源。 */
+    this.coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    this.scrolling = false;
+    var sTimer = 0;
+    window.addEventListener('scroll', function () {
+      self.scrolling = true;
+      clearTimeout(sTimer);
+      sTimer = setTimeout(function () {
+        self.scrolling = false; self.last = 0; self.dirty = true; self.kick();
+      }, 140);
+    }, { passive: true });
     /* day/night swap: CSS variables change, we re-read them */
     if (window.MutationObserver) {
       this.mo = new MutationObserver(function () {
@@ -449,6 +474,9 @@
     this.p.down = true; this.p.x = l[0]; this.p.y = l[1];
     this.p.sx = l[0]; this.p.sy = l[1]; this.p.moved = 0; this.p.t0 = performance.now();
     this.p.vx = 0; this.p.vy = 0;
+    /* 手势方向：触屏先不定（0），等手指真的横着走才接管旋转；
+       纵向一律让给页面滚动 —— 这是"往下滑时模型也跟着动"的根因 */
+    this.p.axis = (e.pointerType === 'touch') ? 0 : 1;
     if (this.canvas.setPointerCapture) { try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { /* noop */ } }
     /* 多指跟踪：第二根手指落下时从拖拽切换成捏合缩放 */
     if (!this.ptrs) { this.ptrs = {}; this.ptrN = 0; }
@@ -462,7 +490,8 @@
     } else if (this.ptrN > 2) {
       this._pinch = true;
     }
-    if (!this._pinch && this.impl.grab) this.impl.grab(l[0], l[1], this);
+    /* 触屏要等方向定了才 grab，否则一次下滑也会先转一下模型 */
+    if (!this._pinch && this.impl.grab && this.p.axis === 1) this.impl.grab(l[0], l[1], this);
     this.dirty = true; this.kick();
   };
   Stage.prototype._ptrGap = function () {
@@ -487,8 +516,22 @@
       return;
     }
     var dx = l[0] - this.p.x, dy = l[1] - this.p.y;
-    this.p.x = l[0]; this.p.y = l[1];
     if (this.p.down) {
+      /* 触屏首次移动：判定方向 —— 纵向让给滚动，横向才开始旋转 */
+      if (this.p.axis === 0) {
+        var adx = Math.abs(l[0] - this.p.sx), ady = Math.abs(l[1] - this.p.sy);
+        if (adx < 7 && ady < 7) { this.p.x = l[0]; this.p.y = l[1]; return; }
+        if (ady >= adx) {                        /* 竖向滑动 = 滚页 */
+          this.p.axis = -1; this.p.down = false;
+          if (this.impl.release) this.impl.release(0, 0, this);
+          this.dirty = true; this.kick();
+          return;
+        }
+        this.p.axis = 1;
+        if (this.impl.grab) this.impl.grab(l[0], l[1], this);
+        dx = l[0] - this.p.x; dy = l[1] - this.p.y;
+      }
+      this.p.x = l[0]; this.p.y = l[1];
       this.p.moved += Math.abs(dx) + Math.abs(dy);
       this.p.vx = dx; this.p.vy = dy;
       if (this.impl.drag) this.impl.drag(dx, dy, this);
@@ -570,6 +613,10 @@
 
   Stage.prototype.frame = function (now) {
     if (!this.onscreen || !this.visible) { this.last = now; return; }
+    /* 滑动页面时冻结画面：触屏上全屏重绘会和滚动合成抢资源，
+       表现就是"边滑边卡"（同星空那条经验）。停手 140ms 后自动续画。 */
+    if (this.scrolling && this.coarse) { this.last = now; this.dirty = true; return; }
+    /* 注：这里不再 self.kick() —— 滑动结束后由 scroll 的防抖回调唤醒 */
     var dt = this.last ? (now - this.last) / 1000 : 1 / 60;
     this.last = now;
     dt = clamp(dt, 0, 1 / 20);
@@ -751,6 +798,10 @@
 
     var hover = -1, lock = -1, idle = 99, dragging = false;
     var follow = false, trails = true;
+    /* 彩蛋：冈部(0) 与 红莉栖(3) 投影后垂直重合的判定结果。
+       alignedUntil = 宽限期：重合的瞬间很短（一两秒），若不加宽限，
+       用户看到提示再去按复位键时两星早已错开，彩蛋就成了摆设。 */
+    var aligned = false, homeSeq = 0, homeAligned = false, alignedUntil = 0;
     /* 世界线变动率：缓慢漂移的读数（装饰性，确定性的） */
     var divg = 0.409431;
 
@@ -812,10 +863,26 @@
 
       /* 复位基准：与 key('R') 完全一致，按钮和键盘走同一条路 */
       HOME: function () {
-        cam.yaw = -0.62; cam.pitch = 0.44; cam.dist = 3.4;
+        cam.yaw = -0.62; cam.pitch = 0.44; cam.dist = 3.4; cam.dTarget = null;
         cam.vyaw = cam.vpitch = 0; lock = -1; follow = false; idle = 0;
+        homeSeq++;                      /* 复位计数：彩蛋靠它识别"按了复位键" */
+        /* 关键：在这一瞬间把"是否重合"记下来。相机被复位后两星很可能
+           立刻错开，如果等页面下一轮轮询再问，彩蛋就永远触发不了 */
+        homeAligned = aligned;
       },
       reset: function () { api.HOME(); },
+
+      /* 视角读写：站长可把当前姿态存成默认展示视角 */
+      pose: function () { return { yaw: cam.yaw, pitch: cam.pitch, dist: cam.dist }; },
+      setPose: function (p) {
+        if (!p) return;
+        if (typeof p.yaw === 'number') cam.yaw = p.yaw;
+        if (typeof p.pitch === 'number') cam.pitch = clamp(p.pitch, -1.32, 1.32);
+        if (typeof p.dist === 'number') { cam.dist = clamp(p.dist, 1.2, 7.2); cam.dTarget = null; }
+        cam.vyaw = cam.vpitch = 0;
+      },
+      /* 彩蛋状态：冈部(0) 与 红莉栖(3) 两星是否垂直重合 + 复位次数 */
+      egg: function () { return { aligned: aligned, homeSeq: homeSeq, homeAligned: homeAligned, lock: lock }; },
 
       /* 采样点 = 仪器本体（环 + 刻度伸出量）。星壳是背景，本来就不在
          "内容"范围里——把它们算进去会把镜头推到远处，整台仪器缩成点。 */
@@ -836,9 +903,10 @@
         dragging = false; idle = 0;
         if (!stage.RM) { cam.vyaw = vx * 0.16; cam.vpitch = vy * 0.13; }
       },
+      /* 缩放只改目标值，实际距离每帧缓动过去 —— 不再一格一格跳 */
       zoom: function (d, stage) {
         var lo = api.fit(stage);
-        cam.dist = clamp(cam.dist + d * 3.2, lo, 7.2);
+        cam.zoomStep(d * 3.2, lo, 7.2);
         idle = 0;
       },
       dbl: function () { follow = !follow; if (follow && lock < 0) lock = 0; },
@@ -852,8 +920,8 @@
         if (k === 'ArrowRight') { cam.yaw += 0.12; follow = false; return true; }
         if (k === 'ArrowUp') { cam.pitch = clamp(cam.pitch - 0.1, -1.25, 1.25); return true; }
         if (k === 'ArrowDown') { cam.pitch = clamp(cam.pitch + 0.1, -1.25, 1.25); return true; }
-        if (k === '+' || k === '=') { cam.dist = clamp(cam.dist - 0.3, api.fit(stage), 7.2); return true; }
-        if (k === '-' || k === '_') { cam.dist = clamp(cam.dist + 0.3, api.fit(stage), 7.2); return true; }
+        if (k === '+' || k === '=') { cam.zoomStep(-0.3, api.fit(stage), 7.2); return true; }
+        if (k === '-' || k === '_') { cam.zoomStep(0.3, api.fit(stage), 7.2); return true; }
         return false;
       },
 
@@ -878,10 +946,15 @@
       update: function (dt, t, stage) {
         idle += dt;
         cam.slide(dt);
+        /* 缩放缓动（滚轮/捏合都走这里） */
+        cam.slideZoom(dt);
         /* 取景下限随视角变化：转到某个角度内容变"宽"时，镜头自动往外让，
            滞回 0.4% 防抖 —— 任何姿态下内容都不许出画布 */
         var lo0 = api.fit(stage);
-        if (lo0 > cam.dist * 1.004) cam.dist = lo0;
+        if (lo0 > cam.dist * 1.004) {
+          cam.dist = lo0;
+          if (cam.dTarget != null && cam.dTarget < lo0) cam.dTarget = lo0;
+        }
         /* 空闲时整台仪器缓慢自转（可在控制台关掉） */
         if (idle > 2.6 && !dragging && !cam.vyaw && stage.opts.spin) cam.yaw += dt * 0.045;
         if (dragging) idle = 0;
@@ -1002,6 +1075,21 @@
         }
         order.sort(function (a2, b2) { return BODIES[b2].sp[2] - BODIES[a2].sp[2]; });
 
+        /* --- 彩蛋判定：冈部(0) 与 红莉栖(3) 是否"垂直重合" ---
+           同一条竖线上（横向几乎重合、纵向错开），且两颗都在镜头前方。
+           命中后由页面提示"按复位键触发"，复位键在此状态下触发对话彩蛋。 */
+        var E0 = BODIES[0].sp, E3 = BODIES[3].sp;
+        /* 窗口给宽一点（约画布宽度的 4%）：两颗星的相对相位约 17 秒扫一圈，
+           太窄的窗口会让"重合"一闪而过，用户根本来不及按复位键 */
+        /* 深度判据用"在镜头前方"而不是"比中心近"：轨道半径 1.24 的那颗
+           跑到远侧时 z 会大于 dist，但它在画面里一样看得见 —— 之前的
+           写法会把这种最常见的情况判掉（探针实测最小 14.8px 却不命中） */
+        var hitNow = Math.abs(E0[0] - E3[0]) < Math.max(14, w * 0.045) &&
+                     Math.abs(E0[1] - E3[1]) > 5 &&
+                     E0[2] > 0.05 && E3[2] > 0.05;
+        if (hitNow) alignedUntil = performance.now() + 6000;   /* 6 秒宽限 */
+        aligned = hitNow || performance.now() < alignedUntil;
+
         for (var oi = 0; oi < order.length; oi++) {
           var ob = BODIES[order[oi]];
           /* trail in four alpha steps */
@@ -1099,7 +1187,7 @@
         return {
           yaw: cam.yaw, pitch: cam.pitch, dist: cam.dist,
           lock: lock, hover: hover, follow: follow, trails: trails,
-          divg: divg,
+          divg: divg, aligned: aligned, homeSeq: homeSeq,
           lockFront: lock >= 0 ? BODIES[lock].sp[2] < cam.dist : null,
           bodies: BODIES.map(function (b) { return [b.sp[0], b.sp[1]]; })
         };
