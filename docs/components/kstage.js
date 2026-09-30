@@ -814,8 +814,36 @@
        用户看到提示再去按复位键时两星早已错开，彩蛋就成了摆设。
        eggSeq = 彩蛋触发计数：重合时按复位键只涨它，相机不动。 */
     var aligned = false, homeSeq = 0, homeAligned = false, alignedUntil = 0, eggSeq = 0;
-    /* 世界线变动率：缓慢漂移的读数（装饰性，确定性的） */
-    var divg = 0.409431;
+    /* ---------- 世界线：收束范围 + 官方作品中出现的真实变动率 ----------
+       数值全部取自作品（不是编的）：α 0.409431 / 0.571046、β 1.130426 /
+       1.129848、STEINS;GATE 1.048596、γ 2.615074、δ 3.600104、ε 4.456441、
+       Ω -0.275349。装置每 18 秒跳一次世界线，跳变时读数乱跳一下、环发光、
+       屏幕中央闪出"世界线变动 · α → β"。 */
+    /* desc = 该世界线"发生了什么"（照作品里的结局概述写，不是编的） */
+    var WORLDLINES = [
+      { k: 'α', n: 'α 世界线', v: 0.409431, band: '0.3–0.6%', tone: 'cool',
+        desc: ['真由理 2010.8 死亡 · 收束无法回避', 'SERN 反乌托邦：冈部 2025、桶子与红莉栖 2036 前死亡'] },
+      { k: 'α', n: 'α 世界线', v: 0.571046, band: '0.3–0.6%', tone: 'cool',
+        desc: ['发出第一封 D-mail 后进入的世界线', '真由理的死亡在此线同样收束'] },
+      { k: 'SG', n: 'STEINS;GATE', v: 1.048596, band: '1.048596%', tone: 'accent',
+        desc: ['真结局：真由理与红莉栖都活下来', '规避世界大战与 SERN 收束 · 未来未知'] },
+      { k: 'β', n: 'β 世界线', v: 1.130426, band: '1.0–2.0%', tone: 'ink',
+        desc: ['红莉栖 2010.7.28 死于广播馆 · 真由理存活', '《命运石之门 0》所在 · 第三次世界大战收束'] },
+      { k: 'β', n: 'β 世界线', v: 1.129848, band: '1.0–2.0%', tone: 'ink',
+        desc: ['删除首封 D-mail 后返回的世界线', '救下真由理，却要面对红莉栖的死'] },
+      { k: 'γ', n: 'γ 世界线', v: 2.615074, band: '2.0–3.0%', tone: 'ink',
+        desc: ['广播剧《暗黑次元的海德》：冈部成为 Rounder', '300 人委员会 · 以凤凰院凶真之名独裁日本'] },
+      { k: 'δ', n: 'δ 世界线', v: 3.600104, band: '3.0–4.0%', tone: 'ink',
+        desc: ['《比翼恋理的爱人》所在 · 全员存活', '看似和平的日常线 · 铃羽仍自 1975 归来'] },
+      { k: 'ε', n: 'ε 世界线', v: 4.456441, band: '4.0–5.0%', tone: 'ink',
+        desc: ['《线形拘束的树状图》· 三世因果的绑架', '真由理死后一年，Time Leap 失败而落至此线'] },
+      { k: 'Ω', n: 'Ω 世界线', v: -0.275349, band: '−1.0–0%', tone: 'cool',
+        desc: ['菲利斯线 · 形同陌路的生疏', '未创立未来道具研究所 · 变动率为负'] }
+    ];
+    /* wlFlash = 辉光/数字乱跳（约 1.2s）；wlText = 提示与概述的停留（约 7s） */
+    var wlIdx = 0, wlPrev = null, wlFlash = 0, wlText = 0;
+    var wlShown = WORLDLINES[0];
+    var divg = WORLDLINES[0].v;
 
     function strokeGlowPath(ctx, color, w, alpha, glow) {
       ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -981,8 +1009,21 @@
           if (b.tr.length > 48 * 3) b.tr.splice(0, 3);
         }
 
-        /* 世界线读数缓慢漂移（时间倍速越大漂得越快） */
-        divg = mod(divg + dt * 1.7e-5 * stage.opts.time * (1 + Math.sin(t * 0.11)), 2);
+        /* --- 世界线跳变（每 14 秒一根，一整轮 9 根 ≈ 2 分钟）+ 跳变闪光 --- */
+        var wi = Math.floor(t / 14) % WORLDLINES.length;
+        if (wi !== wlIdx) {
+          wlPrev = wlShown;
+          wlIdx = wi;
+          wlShown = WORLDLINES[wi];
+          wlFlash = 1;                     /* 辉光 + 数字乱跳 */
+          wlText = 1;                      /* 提示与概述停留约 7 秒 */
+        }
+        if (wlFlash > 0) wlFlash = Math.max(0, wlFlash - dt / 1.2);
+        if (wlText > 0) wlText = Math.max(0, wlText - dt / 7);
+        /* 读数在"当前收束范围内"缓慢漂移（不再整表乱走），
+           并带一点世界线自身的波动（时间倍速越大漂得越快） */
+        var amp = 0.000031 * stage.opts.time;
+        divg = wlShown.v + (Math.sin(t * 0.37) * 0.6 + Math.sin(t * 0.11) * 0.4) * amp;
 
         /* 跟随：镜头追到被锁定星体的正面方向（+π 修正——
            atan2(x,z) 解出的是背面半球，必须翻到面向镜头的那一侧） */
@@ -994,7 +1035,11 @@
       },
 
       draw: function (ctx, stage) {
-        var th = stage.theme, w = stage.w, h = stage.h, q = stage.qual, gl = th.glow * q;
+        var th = stage.theme, w = stage.w, h = stage.h, q = stage.qual;
+        /* 世界线色调：α/Ω 冷、β/γ/δ/ε 墨、STEINS;GATE 用强调色（红）。
+           跳变瞬间整体辉光上扬一下 —— "世界线在动"的直接观感。 */
+        var wlTone = th[wlShown.tone] || th.ink;
+        var gl = th.glow * q * (1 + wlFlash * 0.9);
         cam.frame(w, h);
         var t = stage.t;
         var cx = w * 0.5, cy = h * 0.5, unit = Math.min(w, h) * 0.5;
@@ -1003,7 +1048,9 @@
         for (var i = 0; i < stars.length; i++) {
           cam.project(stars[i], tmp);
           if (tmp[0] < -20 || tmp[0] > w + 20 || tmp[1] < -20 || tmp[1] > h + 20) continue;
-          var a = stars[i][3] * clamp(1.25 - tmp[2] / 8, 0.08, 1) * 0.5;
+          /* 星点缓慢明灭（确定性，用 t 而不是随机数，避免每帧抖动） */
+          var a = stars[i][3] * clamp(1.25 - tmp[2] / 8, 0.08, 1) * 0.5 *
+                  (0.72 + 0.28 * Math.sin(t * 1.15 + i * 1.7));
           ctx.globalAlpha = a;
           ctx.fillStyle = th.dim;
           ctx.fillRect(tmp[0], tmp[1], 1.2, 1.2);
@@ -1052,6 +1099,21 @@
             }
             strokeGlowPath(ctx, pass ? th.ink : th.dim, pass ? 1.2 : 1, pass ? 0.5 : 0.34, gl * 0.3);
           }
+        }
+
+        /* --- 当前世界线（收束范围边界）：最外一圈虚线，颜色随世界线变 ---
+           α/Ω 冷色、β/γ/δ/ε 墨色、STEINS;GATE 是强调的红。跳变时它先亮起 */
+        {
+          var wlPts = ringPath(ctx, 1.42, 0.20, 96, bufC);
+          ctx.setLineDash([3, 6]);
+          drawBands(ctx, wlPts, 96, wlTone, 1, gl * (0.35 + wlFlash * 1.1), 0.06, 0.10 + 0.34 * (0.3 + wlFlash));
+          ctx.setLineDash([]);
+          var wli = 0, wlx = 1e9;
+          for (var q3 = 0; q3 <= 96; q3++) { if (wlPts[q3][0] < wlx) { wlx = wlPts[q3][0]; wli = q3; } }
+          text(ctx, wlShown.n, wlPts[wli][0] - 3, wlPts[wli][1] - 5, wlTone,
+            0.42 + 0.42 * wlFlash, 'right', 8, 1.2);
+          text(ctx, '收束 ' + wlShown.band, wlPts[wli][0] - 3, wlPts[wli][1] + 5, wlTone,
+            0.30 + 0.30 * wlFlash, 'right', 7, 1.2);
         }
 
         /* --- the sun --- */
@@ -1137,9 +1199,19 @@
           ctx.fillStyle = tone; ctx.globalAlpha = 0.92 * al;
           ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
           ctx.globalAlpha = 1;
-          /* terminator: a hairline bite out of the lit disc */
-          ctx.strokeStyle = th.paper; ctx.globalAlpha = 0.5 * al; ctx.lineWidth = Math.max(1, pr * 0.5);
-          ctx.beginPath(); ctx.arc(px, py, pr * 0.86, -2.5, -0.4); ctx.stroke();
+          /* 明暗过渡：径向渐变替代原来那条生硬的发丝线——
+             亮面朝日、暗面沉进纸色的阴影里，球体立刻立体 */
+          var shg = ctx.createRadialGradient(
+            px - pr * 0.38, py - pr * 0.38, pr * 0.08, px, py, pr * 1.18);
+          shg.addColorStop(0, ca(tone, 0));
+          shg.addColorStop(0.62, ca(th.shade, 0.18 * al));
+          shg.addColorStop(1, ca(th.shade, 0.62 * al));
+          ctx.fillStyle = shg;
+          ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
+          /* 边缘光：朝日一侧一圈极细高光（赛璐璐的"轮廓光"） */
+          ctx.strokeStyle = ca(th.lit, 0.45 * gl * al);
+          ctx.lineWidth = Math.max(0.8, pr * 0.17);
+          ctx.beginPath(); ctx.arc(px, py, pr * 0.94, -2.62, -0.45); ctx.stroke();
           ctx.globalAlpha = 1;
 
           /* moon */
@@ -1191,6 +1263,57 @@
           }
         }
 
+        /* --- 世界线变动率计（Divergence Meter）：8 管辉光数字 ---
+           跳变的前 0.45 秒数字乱跳（作品里世界线变动时的样子）。
+           负值的 Ω 线首位留空（作品设定：负值时个位管不显示）。 */
+        var pad2 = Math.max(8, Math.min(14, w * 0.028));
+        var ds = Math.abs(divg).toFixed(6);
+        var cwid = Math.max(7, Math.min(11, w * 0.023)), chei = cwid * 1.5;
+        var gap2 = Math.max(2, cwid * 0.18);
+        var mx0 = pad2, my0 = h - pad2 - chei;
+        var scrambling = wlFlash > 0.45;
+        for (var ci = 0; ci < ds.length; ci++) {
+          var bx = mx0 + ci * (cwid + gap2);
+          var glyph = ds.charAt(ci);
+          if (glyph === '.') glyph = '·';
+          else if (ci === 0 && divg < 0) glyph = ' ';           /* Ω：首位空管 */
+          else if (scrambling) glyph = String(Math.floor(Math.abs(Math.sin(t * 31.7 + ci * 2.3)) * 10));
+          ctx.strokeStyle = wlTone; ctx.globalAlpha = 0.30 + 0.30 * wlFlash; ctx.lineWidth = 1;
+          ctx.strokeRect(bx, my0, cwid, chei);
+          ctx.globalAlpha = 1;
+          text(ctx, glyph, bx + cwid * 0.5, my0 + chei * 0.66, wlTone,
+            0.55 + 0.45 * wlFlash, 'center', cwid * 0.78, 1, 600);
+        }
+        text(ctx, wlShown.k, mx0 + ds.length * (cwid + gap2) + 4, my0 + chei * 0.66,
+          wlTone, 0.7 + 0.3 * wlFlash, 'left', Math.max(9, cwid * 0.8), 1, 600);
+        if (divg < 0) text(ctx, '−', mx0 - 6, my0 + chei * 0.66, wlTone, 0.8, 'right', Math.max(9, cwid * 0.8), 1, 600);
+
+        /* --- 世界线跳变提示：停留约 7 秒，下面两行是该线的结局概述 --- */
+        if (wlText > 0.02) {
+          var aTx = Math.min(1, wlText * 3);            /* 最后约 2 秒淡出 */
+          var y0 = pad2 + Math.max(13, h * 0.038);
+          /* 同一收束范围内换线（α → α）时写成变动率的变化，否则显示 α → β 这种 */
+          var sameField = wlPrev && wlPrev.k === wlShown.k;
+          var cap, csz = Math.max(9.5, w * 0.029);
+          if (!wlPrev) cap = '世界线 · ' + wlShown.n;
+          else if (sameField) {
+            cap = '世界线变动 · ' + wlShown.k + ' ' + wlPrev.v.toFixed(6) + ' → ' + wlShown.v.toFixed(6);
+            csz = Math.max(8, w * 0.021);
+          } else cap = '世界线变动 · ' + wlPrev.k + ' → ' + wlShown.k;
+          text(ctx, cap, w * 0.5, y0, wlTone, aTx * 0.95, 'center', csz, 2.4, 600);
+          /* 一行细分隔线，把标题与概述分开 */
+          ctx.globalAlpha = aTx * 0.28; ctx.strokeStyle = wlTone; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(w * 0.5 - Math.min(70, w * 0.16), y0 + 6);
+          ctx.lineTo(w * 0.5 + Math.min(70, w * 0.16), y0 + 6);
+          ctx.stroke(); ctx.globalAlpha = 1;
+          var dsz = Math.max(7.5, Math.min(10, w * 0.019));
+          for (var di = 0; di < wlShown.desc.length && di < 2; di++) {
+            text(ctx, wlShown.desc[di], w * 0.5, y0 + 18 + di * (dsz + 5), wlTone,
+              aTx * (di === 0 ? 0.7 : 0.55), 'center', dsz, 1.1);
+          }
+        }
+
         /* grain */
         if (stage.opts.grain) stipple(ctx, 0, 0, w, h, Math.round(220 * q), th.ink, 0.035, 4242);
       },
@@ -1201,14 +1324,17 @@
           yaw: cam.yaw, pitch: cam.pitch, dist: cam.dist,
           lock: lock, hover: hover, follow: follow, trails: trails,
           divg: divg, aligned: aligned, homeSeq: homeSeq,
+          wl: wlShown.k, wlIdx: wlIdx, wlFlash: wlFlash, wlText: wlText, wlName: wlShown.n,
           lockFront: lock >= 0 ? BODIES[lock].sp[2] < cam.dist : null,
           bodies: BODIES.map(function (b) { return [b.sp[0], b.sp[1]]; })
         };
       },
 
+      /* 上限两行是 chrome 的契约（多出来的行会被丢掉），
+         所以收束范围挂在世界线环的标签上，而不是塞成第三行 */
       hud: function (stage) {
         return [
-          ['世界线', divg.toFixed(6)],
+          ['世界线', divg.toFixed(6) + wlShown.k],
           ['锁定', lock >= 0 ? BODIES[lock].n : '—']
         ];
       },
