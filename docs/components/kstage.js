@@ -443,6 +443,7 @@
 
     /* --- input --- */
     var c = this.canvas;
+    this.engaged = 0;                        /* 最近一次与装置互动的时间戳 */
     c.addEventListener('pointerdown', function (e) { self.onDown(e); });
     c.addEventListener('pointermove', function (e) { self.onMove(e); });
     c.addEventListener('pointerup', function (e) { self.onUp(e); });
@@ -450,8 +451,13 @@
     c.addEventListener('pointerleave', function () {
       if (!self.p.down && self.impl.hover) { self.impl.hover(null, null, self); self.dirty = true; self.kick(); }
     });
+    /* 滚轮默认归页面滚动：只有"正在跟装置互动"（4 秒内点过/拖过它，
+       或按住 Ctrl/⌘）时滚轮才缩放装置。否则访客翻页时滚轮一掠过画布，
+       模型视角就被改了（用户点名要修这个）。 */
     c.addEventListener('wheel', function (e) {
       if (!self.impl.zoom) return;
+      var active = (performance.now() - self.engaged < 4000) || e.ctrlKey || e.metaKey;
+      if (!active) return;                    /* 不 preventDefault → 页面照常滚 */
       e.preventDefault();
       self.impl.zoom(e.deltaY * 0.0016, self);
       self.dirty = true; self.kick();
@@ -470,6 +476,7 @@
     return [e.clientX - r.left, e.clientY - r.top];
   };
   Stage.prototype.onDown = function (e) {
+    this.engaged = performance.now();        /* 用户开始跟它玩 → 滚轮暂时归它 */
     var l = this.local(e);
     this.p.down = true; this.p.x = l[0]; this.p.y = l[1];
     this.p.sx = l[0]; this.p.sy = l[1]; this.p.moved = 0; this.p.t0 = performance.now();
@@ -534,6 +541,7 @@
       this.p.x = l[0]; this.p.y = l[1];
       this.p.moved += Math.abs(dx) + Math.abs(dy);
       this.p.vx = dx; this.p.vy = dy;
+      this.engaged = performance.now();      /* 拖动中持续刷新互动窗口 */
       if (this.impl.drag) this.impl.drag(dx, dy, this);
     } else if (this.impl.hover) {
       this.impl.hover(l[0], l[1], this);
@@ -613,10 +621,13 @@
 
   Stage.prototype.frame = function (now) {
     if (!this.onscreen || !this.visible) { this.last = now; return; }
-    /* 滑动页面时冻结画面：触屏上全屏重绘会和滚动合成抢资源，
-       表现就是"边滑边卡"（同星空那条经验）。停手 140ms 后自动续画。 */
-    if (this.scrolling && this.coarse) { this.last = now; this.dirty = true; return; }
-    /* 注：这里不再 self.kick() —— 滑动结束后由 scroll 的防抖回调唤醒 */
+    /* 滑动期间降频而非冻结：全帧率重绘会和滚动合成抢主线程（边滑边卡），
+       但全冻结又让模型显得"死了"（用户两边都不满意）。折中：每 ~260ms
+       画一帧——滑过时它还在缓慢呼吸，停手 140ms 后恢复全速。 */
+    if (this.scrolling && this.coarse) {
+      if (now - (this._scDrawn || 0) < 260) { this.last = now; this.dirty = true; this.kick(); return; }
+      this._scDrawn = now;
+    }
     var dt = this.last ? (now - this.last) / 1000 : 1 / 60;
     this.last = now;
     dt = clamp(dt, 0, 1 / 20);
@@ -800,8 +811,9 @@
     var follow = false, trails = true;
     /* 彩蛋：冈部(0) 与 红莉栖(3) 投影后垂直重合的判定结果。
        alignedUntil = 宽限期：重合的瞬间很短（一两秒），若不加宽限，
-       用户看到提示再去按复位键时两星早已错开，彩蛋就成了摆设。 */
-    var aligned = false, homeSeq = 0, homeAligned = false, alignedUntil = 0;
+       用户看到提示再去按复位键时两星早已错开，彩蛋就成了摆设。
+       eggSeq = 彩蛋触发计数：重合时按复位键只涨它，相机不动。 */
+    var aligned = false, homeSeq = 0, homeAligned = false, alignedUntil = 0, eggSeq = 0;
     /* 世界线变动率：缓慢漂移的读数（装饰性，确定性的） */
     var divg = 0.409431;
 
@@ -863,12 +875,13 @@
 
       /* 复位基准：与 key('R') 完全一致，按钮和键盘走同一条路 */
       HOME: function () {
+        /* 彩蛋语义（用户点名）：两星重合（含宽限期）时按复位键 =
+           只触发彩蛋，相机绝不动；只有平时按复位才真的复位。 */
+        if (aligned) { eggSeq++; return; }
         cam.yaw = -0.62; cam.pitch = 0.44; cam.dist = 3.4; cam.dTarget = null;
         cam.vyaw = cam.vpitch = 0; lock = -1; follow = false; idle = 0;
         homeSeq++;                      /* 复位计数：彩蛋靠它识别"按了复位键" */
-        /* 关键：在这一瞬间把"是否重合"记下来。相机被复位后两星很可能
-           立刻错开，如果等页面下一轮轮询再问，彩蛋就永远触发不了 */
-        homeAligned = aligned;
+        homeAligned = aligned;          /* 快照按下那一刻的对齐状态 */
       },
       reset: function () { api.HOME(); },
 
@@ -882,7 +895,7 @@
         cam.vyaw = cam.vpitch = 0;
       },
       /* 彩蛋状态：冈部(0) 与 红莉栖(3) 两星是否垂直重合 + 复位次数 */
-      egg: function () { return { aligned: aligned, homeSeq: homeSeq, homeAligned: homeAligned, lock: lock }; },
+      egg: function () { return { aligned: aligned, homeSeq: homeSeq, homeAligned: homeAligned, eggSeq: eggSeq, lock: lock }; },
 
       /* 采样点 = 仪器本体（环 + 刻度伸出量）。星壳是背景，本来就不在
          "内容"范围里——把它们算进去会把镜头推到远处，整台仪器缩成点。 */

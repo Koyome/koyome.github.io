@@ -202,6 +202,16 @@ const ok = (c, msg) => { console.log((c ? 'ok   ' : 'FAIL ') + msg); if (!c) bad
       { type: 'mouseWheel', x: (await ev(`(() => { const r = document.querySelector('.sigil-orrery').getBoundingClientRect(); return r.left + r.width / 2; })()`)),
         y: (await ev(`(() => { const r = document.querySelector('.sigil-orrery').getBoundingClientRect(); return r.top + r.height / 2; })()`)),
         deltaX: 0, deltaY: dy }, sid);
+    /* 新规则：滚轮默认归页面滚动，只有跟装置互动过（4s 内）滚轮才缩放。
+       所以先点一下画布"激活"，再发滚轮。 */
+    const engage = async () => {
+      const cc = await ev(`(() => { const r = document.querySelector('.sigil-orrery').getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+      await send(ws, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: cc.x, y: cc.y, button: 'left', clickCount: 1 }, sid);
+      await send(ws, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: cc.x, y: cc.y, button: 'left', clickCount: 1 }, sid);
+      await sleep(80);
+    };
+    await engage();
     for (let i = 0; i < 14; i++) { await sendWheel(-160); await sleep(60); }
     await sleep(700);
     const zf = await ev(`(() => { const s = document.querySelector('.sigil-orrery').__kstage;
@@ -210,6 +220,14 @@ const ok = (c, msg) => { console.log((c ? 'ok   ' : 'FAIL ') + msg); if (!c) bad
       `zoom-in bottoms at the fit bound, nothing clipped (dist ${zf.dist.toFixed(3)} ≥ fit ${zf.lo.toFixed(3)})`);
     ok(zf.rb && zf.rb[0] > 0 && zf.rb[0] < zf.w && zf.rb[1] > 0 && zf.rb[1] < zf.h,
       'reset button is drawn inside the canvas');
+    /* 彩蛋语义：两星重合（含 6s 宽限）时复位键只触发彩蛋不复位。
+       等宽限期结束，再测真正的复位。 */
+    for (let i = 0; i < 30; i++) {
+      const a = await ev(`(() => { const s = document.querySelector('.sigil-orrery').__kstage;
+        return s.impl.egg ? s.impl.egg().aligned : false; })()`);
+      if (!a) break;
+      await sleep(500);
+    }
     const brb = await ev(`(() => { const r = document.querySelector('.sigil-orrery canvas').getBoundingClientRect();
       const rb = document.querySelector('.sigil-orrery').__kstage._rb; return { x: r.left + rb[0], y: r.top + rb[1] }; })()`);
     await send(ws, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: brb.x, y: brb.y, button: 'left', clickCount: 1 }, sid);
@@ -367,7 +385,14 @@ const ok = (c, msg) => { console.log((c ? 'ok   ' : 'FAIL ') + msg); if (!c) bad
       `phone: two-finger pinch zooms the model (dist ${ph.dist0.toFixed(2)} -> ${pinch.dist.toFixed(2)})`);
     ok(!pinch.pinching, 'phone: pinch state released after both fingers lift');
 
-    /* and a tap on the reset button brings it home again */
+    /* and a tap on the reset button brings it home again
+       （重合宽限期内复位键只触发彩蛋，先等宽限期结束） */
+    for (let i = 0; i < 30; i++) {
+      const a = await ev(`(() => { const s = document.querySelector('.sigil-orrery').__kstage;
+        return s.impl.egg ? s.impl.egg().aligned : false; })()`);
+      if (!a) break;
+      await sleep(500);
+    }
     const trb = await ev(`(() => { const r = document.querySelector('.sigil-orrery').getBoundingClientRect();
       const rb = document.querySelector('.sigil-orrery').__kstage._rb;
       return rb ? { x: Math.round(r.left + rb[0]), y: Math.round(r.top + rb[1]) } : null; })()`);

@@ -496,11 +496,12 @@
         if (s.aligned) showHint(); else clearHint();
       }
 
-      if (lastSeq < 0) { lastSeq = s.homeSeq; return; }
-      if (s.homeSeq !== lastSeq) {
-        lastSeq = s.homeSeq;
-        /* 用"按下复位键那一刻"的对齐状态判定（相机复位后两星可能已错开） */
-        if (s.homeAligned) playDuo();
+      /* 双人对话：kstage 那边在"重合时按复位"才涨 eggSeq（且相机不复位），
+         这里只盯 eggSeq，不需要再自己判重合 */
+      if (lastSeq < 0) { lastSeq = s.eggSeq; return; }
+      if (s.eggSeq !== lastSeq) {
+        lastSeq = s.eggSeq;
+        playDuo();
       }
     }, 240);
   }
@@ -522,15 +523,16 @@
 
     var saved = parseView(profile && profile.orreryView);
     if (saved) {
-      /* 装置可能是懒加载的：反复套几次直到它真的活着 */
-      var tries = 0;
+      /* 只套一次：反复套用会跟 fit() 的自动外推互相拉扯，刷新后看着
+         就像"循环卡"。装置是懒加载的，等它活了，套一次就走。 */
       var iv = setInterval(function () {
         var st = stOf();
         if (st && st.impl && st.impl.setPose) {
           st.impl.setPose(saved); st.dirty = true; st.kick();
-          if (++tries > 25) clearInterval(iv);
-        } else if (++tries > 80) clearInterval(iv);
+          clearInterval(iv);
+        }
       }, 150);
+      setTimeout(function () { clearInterval(iv); }, 12000);
     }
 
     var owner = false;

@@ -394,8 +394,10 @@ const DBG = (sel) => `document.querySelector('[data-kstage="${sel}"]').__kstage.
          clipped by the container — and one click on the reset button
          brings the whole view back ---- */
     for (const sel of ['orrery', 'prism', 'globe', 'meter', 'lab']) {
-      /* 狂滚放大 */
+      /* 狂滚放大（新规则：先点画布激活，滚轮才归装置） */
       const bb = await box(`[data-kstage="${sel}"] canvas`);
+      await click(bb.x, bb.y);
+      await sleep(80);
       for (let i = 0; i < 14; i++) {
         await send(ws, 'Input.dispatchMouseEvent',
           { type: 'mouseWheel', x: bb.x, y: bb.y, deltaX: 0, deltaY: -160 }, sessionId);
@@ -422,13 +424,26 @@ const DBG = (sel) => `document.querySelector('[data-kstage="${sel}"]').__kstage.
          某些装置的出厂默认略低于取景下限，复位后被推到边界也是"完整" */
       const HOME = { orrery: 3.4, prism: 3.4, globe: 3.05, meter: 4.8, lab: 1.95 };
       const before = await ev(`${DBG(sel)}.dist`);
+      /* 彩蛋语义（仅 orrery）：重合态按复位 = 只触发彩蛋、相机不动；
+         平时按复位 = 真复位。按当前状态分支断言两种预期。 */
+      const eggState = sel === 'orrery'
+        ? await ev(`(() => { const s = document.querySelector('[data-kstage="orrery"]').__kstage;
+            return s.impl.egg ? s.impl.egg() : { aligned: false, eggSeq: -1 }; })()`)
+        : { aligned: false, eggSeq: -1 };
       const cvs = await tl(sel);
       await click(cvs.l + rb.rb[0], cvs.t + rb.rb[1]);
       await sleep(500);
       const after = await ev(`${DBG(sel)}.dist`);
-      const want = Math.max(HOME[sel], inside.lo);
-      ok(Math.abs(after - want) < 0.05,
-        `${sel}: one click on the reset button restores a complete view (dist ${before.toFixed(2)} -> ${after.toFixed(2)}, want ≈ ${want.toFixed(2)})`);
+      if (eggState.aligned) {
+        const eggAfter = await ev(`(() => { const s = document.querySelector('[data-kstage="orrery"]').__kstage;
+          return s.impl.egg(); })()`);
+        ok(eggAfter.eggSeq > eggState.eggSeq && Math.abs(after - before) < 1e-6,
+          `orrery: aligned state → reset click triggers the egg without moving the camera (eggSeq ${eggState.eggSeq} -> ${eggAfter.eggSeq}, dist stays ${after.toFixed(2)})`);
+      } else {
+        const want = Math.max(HOME[sel], inside.lo);
+        ok(Math.abs(after - want) < 0.05,
+          `${sel}: one click on the reset button restores a complete view (dist ${before.toFixed(2)} -> ${after.toFixed(2)}, want ≈ ${want.toFixed(2)})`);
+      }
     }
 
     console.log(bad ? `\n${bad} check(s) flagged` : '\nkstage suite clean');
