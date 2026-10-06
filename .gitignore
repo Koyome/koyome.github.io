@@ -11,3 +11,13 @@ Thumbs.db
 
 tools/deploy-key
 tools/deploy-key.pub
+
+# the 高德 IP-location key (optional; see server.js geoLookup)
+tools/geo-key.txt
+
+# the Supabase read secret for the visitor table (optional; see tools/supabase-visits.sql)
+tools/sb-key.txt
+
+# the visitor roll — real addresses of real people, local only.
+# it must never reach the public site (docs/ is what Pages publishes).
+docs/data/visits.json

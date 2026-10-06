@@ -13,6 +13,7 @@
     { key: 'catalog', href: 'catalog.html', label: 'nav_catalog' },
     { key: 'hobbies', href: 'hobbies.html', label: 'nav_hobbies' },
     { key: 'guestbook', href: 'guestbook.html', label: 'nav_guestbook' },
+    { key: 'journal', href: 'journal.html', label: 'nav_journal' },
   ];
   /* admin entry is owner-only — injected later by maybeRevealAdmin()
      once the API check proves this is the management machine */

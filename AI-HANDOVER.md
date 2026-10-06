@@ -1,8 +1,95 @@
 # Koyome.me — 项目交接文档（AI Handover）
 
 > 写给下一个接管本项目的 AI（或人类开发者）：**读完这一份，即拥有继续开发的全部上下文。**
-> 最后更新：2026-10-01（第二十九轮续：浑天仪世界线表达多样化 + 模型质感；同日早先还修了刷新循环卡/滑动冻结/滚轮冲突/彩蛋 R 语义）
+> 最后更新：2026-10-07（第三十二轮：线上信标 + 独立 IP 名册页；第三十一轮：日志页 journal.html — 无职转生式叙事手记 + 访客 IP／区级地理位置记录；第三十轮为全站排版与设计语言 token 化打磨）
 > 仓库状态：本地 HEAD = `4e8dc46`，**远端 main 与之相同**（09-26 20:37 用户一键推送，R20–R24 已上线）｜ ⚠️ 常驻推送授权**已于 2026-09-23 取消**：AI 推送前必须逐次征得用户同意（§4.3）
+
+---
+
+## 0.32 第三十二轮速览（2026-10-07）：访客记录补完 —— 线上信标 + 独立 IP 名册页
+
+- **问题根因**：用户用手机打开线上站（GitHub Pages）后本地看不到记录。**这不是 bug，是托管形态决定的**——静态站的请求根本不经过站长电脑，`server.js` 无论怎么写都不可能看见。唯一解是云端转一手。
+- **线上信标 `docs/js/visit-beacon.js`（新增）**
+  - 只在**本地 API 答"无"**时才发（`Koyome.apiAvailable()` 为 false），站长本机由 server.js 自己记，两边不重复计数。
+  - 取自身公网 IP **三级兜底**：`freeipapi.com`（顺带回经纬度）→ `ipwho.is` → `jsonip.com`，各 4.5s 超时。**改成链式的直接原因：ipwho.is 单用时会 429**（探针实测 429，信标静默不发）。
+  - POST 到 `${GB_CLOUD.url}/rest/v1/visits`，字段 `ip/page/ua/lat/lon`；localStorage 半小时节流；爬虫 UA 跳过；所有失败吞掉。
+  - 已注入 `index/catalog/entry/hobbies/guestbook/journal/admin.html`（`?v=202610070533`）。
+- **云端读回（server.js）**：`fetchCloudVisits()` 带 15s 缓存，`sbHeaders()` 从 `tools/sb-key.txt`（已 gitignore）读口令塞 `x-koyome-key`；`mergedVisits()` 把本地行与云端行合流、同样走一遍三级定位；新增 `GET /api/visits/status` 诚实报告 `ok|no-table|denied|no-config|error`。
+- **`tools/supabase-visits.sql`（新增，一次性）**：建 `public.visits(id,ip,page,ua,lat,lon,ts)` + 索引 + RLS + anon 仅 INSERT + 按 `x-koyome-key` 的 SELECT 策略。**口令已生成并写进 SQL 与 `tools/sb-key.txt`，用户粘贴即跑、不用自己想口令**。
+- **地址格式修正 `placeOf()`**（探针抓到两处真 bug）：① `杭州` 因结尾「州」被误判为已有行政后缀 → 改成只认 `自治州/自治区/特别行政区/盟/旗/市/区/县`；② 美国地址被拼成「弗吉尼亚州省Ashburn市」→ 增加 `isCn` 判定，非中国行改用「 · 」连接、不加中文后缀。
+- **CORS**：server.js 顶部加 `OPTIONS` 预检处理（204 + ACAO:*），否则桌面 file:// 页的 DELETE 会被浏览器拦。
+- **独立 IP 名册页**：`C:/Users/杨坤/Desktop/kstage-preview.html` 新增 **08 访客记录 IP LEDGER** 一节（CSS + HTML + 驱动脚本）。列：时间 / 地址 / 所在地（省市区）/ 经纬度 / 网络 / 页面 / 来源（本机｜线上 ↑）。带刷新、20s 自动刷新、清空（只清本地，云端表不动）；服务未起给出明确提示。
+- **探针**：`tools/probe-visit-online.js` **13/13**（格式化 6 项 + 裸静态站下信标真发：探测 API 失败 → 查公网 IP → POST 真实地址 → 二次浏览不再重复登记）；`tools/probe-ip-page.js` **15/15**（08 节存在、连上服务、云端状态上报、行数与计数一致、单元格非空、无横向溢出、console 干净）。
+- **探针踩坑**：① 无头 Edge 的 UA 含 `headless`，被信标 `isBot()` 正确拦掉——探针必须 `Network.setUserAgentOverride` 伪装成 iPhone；② 信标最长要等 3×4.5s，断言前等 12s。
+- **自查发现并修复（2026-10-07 05:59）**：
+  - **RLS 未生效（隐私漏洞，用户必须处理）**：虽然建表 SQL 已 `enable row level security`
+    并建了带口令的 SELECT 策略，但实测 **anon 不带 `x-koyome-key` 仍能 SELECT 全表**。
+    该项目对 anon 另有 permissive 策略。**anon key 就在 `docs/js/gb-config.js` 里是公开的**
+    → 任何访客都能读走/删掉全部访客 IP。新增 `tools/supabase-visits-harden.sql`：
+    先 select 出全部策略、再全部 drop、`revoke all` from anon/authenticated、
+    只 `grant insert`、用四条策略重建（insert 任意 / select 需口令 / update false / delete false），
+    末尾清掉自测数据。**用户须再跑一次。**
+  - **`IANA保留地址` 混进区字段**：保留网段（`203.0.113.x` 等）经 pconline/ip-api 解析后
+    把「IANA保留地址」当成区名。改为**白名单式**判断——`PLAUSIBLE_PLACE = /[区县旗州]$/`，
+    不合即清空（不再依赖"列出已知坏词"，新运营商词/新注释就漏不过去了）。
+    已固化进 `probe-amap.js`（13 脏 + 7 正常 = 20 项）。
+  - **服务重启才生效**：`cloudCache` 是进程内 15s 缓存，改 server.js 后**必须重启**，
+    否则会看到"改了没反应"。自查时一度误判为读取故障。
+- **推送是开关**：`visit-beacon.js` 只在本地仓库，线上 `koyome.github.io/js/visit-beacon.js`
+  实测 **404**——不推送，手机访问线上站不会登记。教程里已加「第三件事 · 必须推送一次」。
+- **配套教程 `tools/SETUP-VISITS.md`（新增）**：图文逐步——为什么静态站必须走云端中转、
+  SQL Editor 精确 URL、每种报错的处理表、高德 2-4 步申请流程（重点：服务平台只勾
+  **Web服务**、白名单留空）、自检清单与安全说明。**AI 不能代为申请高德 Key**：需手机号
+  验证码 + 实名认证（身份证），既收不到验证码，也不应经手身份信息。
+- **Key 管理接口（新增，解决"改文件+重启服务"）**：`GET /api/geo-key` 报 `{configured, masked}`；
+  `POST /api/geo-key` **当场向高德真发一次请求验证**再决定是否落盘——
+  `INVALID_USER_KEY` / `USERKEY_PLAT_NOMATCH` / `SERVICE_NOT_ENABLED` 判为致命错误，
+  **拒绝保存**并回中文提示（否则一个坏 Key 会导致区级永久空白）；配额/网络抖动则照收。
+  成功后写 `tools/geo-key.txt`、`AMAP_KEY` 立即生效、`GEO.clear()` 清缓存重查。
+  桌面页 08 节的「高德 Key」输入框 + 「自检」按钮即为此做的前端。
+- **探针**：`tools/probe-visit-online.js` **13/13**（格式化 6 项 + 裸静态站下信标真发）；
+  `tools/probe-ip-page.js` **15/15**（08 节存在、连上服务、行数与计数一致、单元格非空、
+  无横向溢出、console 干净）；`tools/probe-amap.js` **16/16**（**用本地假高德验证高德分支**——
+  `district` 真能取出、`location` 的 X,Y 未写反、拼出「广东省深圳市南山区」、
+  配额报错不伪造区、报错文本不泄漏进地址、高德宕机不抛异常）。
+- **探针踩坑**：① 无头 Edge 的 UA 含 `headless`，被信标 `isBot()` 正确拦掉——探针必须
+  `Network.setUserAgentOverride` 伪装成 iPhone；② 信标最长要等 3×4.5s，断言前等 12s；
+  ③ 写「高德失败」的断言时别断言"字段全空"——正确行为是**回退到免费源拿到市级**，
+  该断言应验"没有凭空造出区"。
+- **接口高德 v5 vs v3**：`restapi.amap.com/v5/ip?key=&ip=&type=4` 返回
+  country/province/city/district/adcode/`location`(经度在前)/isp；`v3/ip` 只到市级。
+
+---
+
+## 0.31 第三十一轮速览（2026-10-07）：日志页 —— 叙事手记 + 访客足迹
+
+- **日志页 `docs/journal.html`（新增页面，导航第 05 项「手記 / Journal」）**
+  - 内容源 `docs/data/journal.json`（**双语 `title/titleZh`、`text/textZh`**，共 31 轮，倒序）。沿用 `Koyome.loc()` 取值，简中走运行时 `t2s`，**不复制中文真源**。
+  - 叙事体例：第一人称回想、章题 + 地名、克制反省（参考無職転生的自传/冒险手记口吻），每轮 2–4 句，**精简**。
+  - 轮次取材：`AI-HANDOVER.md`（R9–R29）+ 桌面 `AI-HANDOVER9.md`（R25 人偶页细节）+ `git log`（R1–R8 早期提交）。**注意两份交接文档的轮次编号有冲突**（桌面版 R23=浑天仪、仓库版 R23=雷达图），本轮统一采用**仓库版（更新）**编号。
+  - 新增 i18n 三语键：`title_journal`/`nav_journal`/`journal_*`/`visit_*`，审计 **212×3 一致**。
+- **访客记录（IP + 区级地理位置）**
+  - 数据 `docs/data/visits.json`；**已加入 `.gitignore`**——含真实访客地址，绝不能随 `docs/` 推到公开站。
+  - 落点：server.js 静态分支，**仅在 GET `.html` 时**记一次（素材/API/404 不算人）。`::ffff:` 前缀归一；爬虫 UA（bot/curl/wget/headless…）剔除。
+  - **去重**：同 IP 30 分钟窗口内合并为一行并 `count++`，同时累计 `pages`。
+  - **定位三级降级**：① 可选高德 `tools/geo-key.txt`（或 `AMAP_KEY`）→ 真正到 **区/县**；② ip-api.com（`lang=zh-CN`，免费无密钥，45/分钟）→ 国家/省/市；③ pconline（GBK，`addr` 里取区/县，过滤「电信/联通/公司」等运营商词）补区。**私网/局域网一律 `lan:true` 且不编造地点**。全部 `try/catch` + 3.5s 超时 + 内存缓存，**不阻塞响应**。
+  - 零新增依赖（Node 22 内置 `fetch` / `TextDecoder('gbk')`）。
+  - **可见性**：访客名册仅在 `apiAvailable()` 为真时渲染（= 站长本机），静态站上整块 `remove()`，访客地址不会出现在任何人能读到的页面里。
+- **新增探针**：`tools/probe-visits.js`（**隔离沙箱**：临时目录复制 server.js 并只改 `clientIp()` 使其读 `x-test-ip` 头，真实 `visits.json` 零触碰；18 项全绿——记录/去重计数/多页累计/局域网降级/爬虫不计/重启持久化/清空）。`tools/probe-journal.js`（真实浏览器 14 项全绿——31 轮渲染、章题/地名/正文、三语切换、访客表可见、桌面与手机均无横向溢出、console 干净）。
+- **探针踩坑**：① 导航类名是 `nav.menu-panel` 不是 `.site-nav`；② 访客表要等 API 探测完成，**断言前至少等 5.2s**，否则读到 0 行。
+- **未提交、未推送**（§4.3）。改动文件：`docs/journal.html`、`docs/js/journal.js`、`docs/data/journal.json`、`docs/js/i18n.js`、`docs/js/header.js`、`docs/css/style.css`、`server.js`、`.gitignore`、本文件，另有新增 `tools/probe-visits.js`、`tools/probe-journal.js`。
+
+---
+
+## 0.30 第三十轮速览（2026-10-07）：排版与设计语言 token 化打磨
+
+- 唯一生产改动 `docs/css/style.css`（+859/−565，1807→~2260 行）。**视觉风格、配色方向、布局结构全部不变**，只做内部规范。
+- 建立完整 token 体系：字号阶梯（`--fs-2xs…--fs-h1` + 5 档 fluid `clamp()`）、字重收敛为单一 `--fw-normal:400`、6 档行高、9 档字距、间距尺 `--sp-1…14`（4px 栅格）、半径收敛为 `--r-1/--r-round/--r-pill`、阴影按角色命名 `--shadow-quiet/lift/float`、动效 `--dur-1…5`、焦点环 `--focus-ring/--focus-offset`。
+- 文件头写入**断点契约**（≤480/≤720/≤880/≤1399/≥1400），禁止越界开媒体查询。
+- 统一沟槽（移动端 header/content/footer 同为 20px）、hover 缩进方言、hover 显形（含自身 `:focus-visible`）；全站 `:where(...):focus-visible` 焦点环；移除 `.media-stack .deck`（`tabindex="0"`）上的 `outline:none` 回归。
+- 布局等价性实测（7 页 × 桌面/移动 vs 基线 `d984999`）：**宽度 100% 零变化**，无横向溢出；高度变化全部来自行高/字距规范化与移动端内容加宽 4px 的重排。
+- ⚠️ **已知既有偶发失败**：`tools/probe-home-armillary.js` 的 "canvas corners are transparent" 断言采样动画中画布单像素 alpha（出现 1/5/6 这类 ≤6/255 的值）。用未改动的基线 CSS 跑 3 次也失败 2 次，**非本轮引入**；要稳定需把阈值从 `=== 0` 放宽到 `<= 8`。
+- **未提交、未推送**（§4.3）。
 
 ---
 
@@ -634,6 +721,9 @@ GIT="/c/Users/杨坤/.workbuddy/binaries/PortableGit/versions/1.2.0/cmd/git.exe"
 | GET/POST | `/api/hobbies` | 读/整页覆写爱好数据（POST 字段裁剪） |
 | POST | `/api/hobbies/upload` | 爱好图片上传 `{file:dataURL,filename}` → `{src}` |
 | GET/POST/DELETE | `/api/guestbook` | 本地留言增删查（云模式下仅兜底） |
+| GET/DELETE | `/api/visits` | 访客名册（本地行 + 云端行合流并补全定位）/ 清空本地记录 |
+| GET | `/api/visits/status` | 云端半边体检：`{cloud: ok｜no-table｜denied｜no-config｜error, rows}` |
+| GET/POST | `/api/geo-key` | 读/存高德 Web 服务 Key（POST 会当场验证，无效 Key 拒存） |
 
 上传一律 dataURL base64 → `assets/时间戳_文件名.ext`；BODY_LIMIT 200MB；音频 MIME：mp3/wav/ogg/flac/m4a。
 
@@ -660,3 +750,6 @@ GIT="/c/Users/杨坤/.workbuddy/binaries/PortableGit/versions/1.2.0/cmd/git.exe"
 8. 验证云端 INSERT 权限可不落数据：故意违反 check 约束，返回 23514 即权限正常（401/42501 才是策略缺失）。
 9. infinite CSS 动画只挂可见态选择器；出场动画时长必须 < 跳转延迟。（过渡动画已全拆，存档备用）
 10. AI 沙箱起不了持久进程（§4.2）——需要"用户关机重启后仍在"的服务，给用户可双击的脚本，别自己扛。
+11. **免费 IP 定位源会 429**，单源必挂：信标要写成串行兜底链（freeipapi → ipwho.is → jsonip），且每级独立超时。
+12. **无头浏览器的 UA 含 `headless`**，会被站内"剔除爬虫"的逻辑正确拦掉——探针里凡是验证面向真人的行为，都要先 `Network.setUserAgentOverride` 伪装成真实设备 UA，否则会误判成"功能没生效"。
+13. 静态站（GitHub Pages）**不可能**被站长本机的服务端看见。凡"线上访客 → 站长可见"的需求，必须走云端中转，且通常伴随一个用户不得不做的一次性动作（建表/填 Key）——要提前讲清，别让功能静默装死。

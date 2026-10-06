@@ -1,0 +1,285 @@
+{
+  "intro": "A traveller's ledger. Every round is a day on the road — where we stopped, what broke, and what we learned. Written afterwards, in the plain voice of someone looking back.",
+  "introZh": "旅人的手記。每一輪都是路上的一天——停在何處、壞了什麼、學會什麼。事後寫下，用回頭看的人的口氣。",
+  "rounds": [
+    {
+      "n": 31,
+      "date": "2026-10-07",
+      "place": "紙與字的工房",
+      "title": "Chapter XXXI — The Ledger and the Footprints",
+      "titleZh": "第三十一章 — 手記與足跡",
+      "text": "I stopped building and started writing things down. One page gathers every round behind me, told the way a traveller tells it — not as a list of deeds, but as days on a road. And from this day the house keeps count of who knocked at the door: their address, their district, the hour. It is not a grand magic. It is simply no longer forgetting.",
+      "textZh": "我停下手裡的活，開始把事情寫下來。一頁紙收攏了身後所有的輪次，用旅人講述的口氣——不是功績清單，而是路上的日子。也是從這天起，這間屋子開始記下誰來敲過門：地址、所在之區、來的時辰。這不是什麼了不起的魔法，只是從此不再遺忘。"
+    },
+    {
+      "n": 30,
+      "date": "2026-10-07",
+      "place": "字距與留白的荒野",
+      "title": "Chapter XXX — Rulers, Not Decorations",
+      "titleZh": "第三十章 — 尺，而非裝飾",
+      "text": "Nothing new was added. That was the whole point. Every scattered number in the stylesheet was gathered onto one ruler: sizes, spacing, shadows, durations, the ring that shows where the cursor is. The house looks the same — it simply stopped being improvised. Now if I want to change the mood, I turn one dial instead of hunting thirty rooms.",
+      "textZh": "沒有加任何新東西。這正是本輪的全部。樣式表裡所有散落的數字被收攏到一把尺上：字級、間距、陰影、時長、以及顯示游標所在的那圈線。屋子看起來沒變——它只是不再即興。如今想改氣氛，轉一個鈕就夠，不必再逐間房去翻。"
+    },
+    {
+      "n": 29,
+      "date": "2026-09-28",
+      "place": "天球儀之下",
+      "title": "Chapter XXIX — The Sphere That Finally Obeyed",
+      "titleZh": "第二十九章 — 終於聽話的天球",
+      "text": "The sphere kept stealing the page: a finger dragged downward and the world turned instead of scrolling. I taught it to ask which way the finger meant first. Then it learned to slow gently rather than jump, and to grow a little without ever leaving a phone screen. It also learned to keep a pose I choose, and to carry it to the far shore when the content goes out. Then came the eggs — five voices, and two of them meant for each other. When their stars stand one above the other and you press the return key, they speak in turn. Now I think of that as the house remembering its people.",
+      "textZh": "天球一直搶走頁面：手指向下滑，轉動的是世界而不是頁面。我先教它弄清楚手指究竟想去哪個方向。然後它學會慢慢收勢而不是猛跳，也學會長大一點而不越出手機的邊界。它還學會記住我選的姿勢，並在內容推送時把這姿勢一起帶到對岸。再來是彩蛋——五個人的聲音，其中兩個是說給對方的。當兩顆星上下重合、你按下復位鍵，他們便依次開口。如今我把這當作屋子記住了它的人。"
+    },
+    {
+      "n": 28,
+      "date": "2026-09-27",
+      "place": "桌面的試作台",
+      "title": "Chapter XXVIII — A Workbench, and a Figure Let Go",
+      "titleZh": "第二十八章 — 一張工作檯，與放手的塑像",
+      "text": "I carried the figure onto the desk and made it a workbench of its own, so a model could be judged before it was ever carried into the house. Then, the same day, I was told to let the figure go. I did. The page, its words in three tongues, and the plate beneath it were all taken down — but the model itself was left in storage, because a thing that cost effort is not a thing to burn. The workbench stays; it never needed the house.",
+      "textZh": "我把塑像搬到桌上，替它單做了一張工作檯，好讓模型在進屋之前先被評判。就在同一天，我被告知把塑像放掉。我照做了。那一頁、三種語言的詞條、還有它下方的展牌，全部拆除——但模型本身留在了庫房，因為費過力氣的東西不該拿去燒。工作檯留著，它本來就不依賴這間屋子。"
+    },
+    {
+      "n": 27,
+      "date": "2026-09-26",
+      "place": "畫布的深處",
+      "title": "Chapter XXVII — Six Machines, Drawn by Hand",
+      "titleZh": "第二十七章 — 六台器械，親手畫成",
+      "text": "You told me plainly that what I had made was shabby — the three-dimensional thing included — and that it had no play in it. You were right. Line drawings and stacked pictures can only ever be pictures. So I threw it away and wrote a renderer: a real camera, depth sorting, one light for everything. Six machines came out of it — a sphere, a moon you can scrub by hand, a crystal, a globe, a divergence meter, a figure in a laboratory. Now I know the difference between a drawing of a thing and the thing.",
+      "textZh": "你直說我做的東西太簡陋——包括那個三維的——而且沒有可玩之處。你是對的。線稿和疊起來的圖片終究只是圖片。於是我全部推倒，自己寫了一個渲染器：真正的相機、深度排序、全世界共用一盞燈。最後出來六台器械——天球、可用手推著走的月亮、晶體、地球儀、變動率計、實驗室裡的人偶。我這才明白「畫出來的東西」和「東西」的差別。"
+    },
+    {
+      "n": 26,
+      "date": "2026-09-26",
+      "place": "巡夜人的更房",
+      "title": "Chapter XXVI — The Whole House, Examined",
+      "titleZh": "第二十六章 — 全屋體檢",
+      "text": "You asked me to look for conflicts and bugs, and to touch nothing if there were none. I looked in four ways: whether the code parses, whether the three tongues still match word for word, whether every path points at something that exists, and whether the pages survive being loaded in the dark. One real fault surfaced — under the 'stillness' setting the starfield would not repaint when day turned to night. Fixed. Everything else was left exactly as it was, and I think that restraint was the actual work.",
+      "textZh": "你要我找衝突與錯誤，沒有就別動。我用四種方式查：程式能否解析、三種語言是否字字對得上、每條路徑是否真有東西、以及在夜裡載入時頁面是否還活著。只浮出一處真錯——在「靜止」設定下，日夜翻轉時星空不會重畫。修好了。其餘一律原樣未動，而我覺得那份克制才是本輪真正的活。"
+    },
+    {
+      "n": 25,
+      "date": "2026-09-26",
+      "place": "線條的瘦身房",
+      "title": "Chapter XXV — Taking Away Until It Breathes",
+      "titleZh": "第二十五章 — 減到它能呼吸",
+      "text": "You said the ornaments were competing with the content. So I removed: the noisiest star-polygon from the rose window, nineteen circles down to seven in the flower of life. And I thickened: the armillary rings got real metal — gradient, highlight, rivets, weight. For the animated ones I made a rule and kept it: only transform and opacity move, and every moving piece carries its own still value, so peeling the animation off leaves the very same picture. It matters, because a browser will not carry a stillness setting into an image the way you'd expect.",
+      "textZh": "你說裝飾在跟內容搶注意力。於是我刪：玫瑰窗最吵的星形多邊形、生命之花從十九個圓減到七個。也加厚：渾儀的環有了真正的金屬——漸層、高光、鉚接、重量。對於會動的那些，我立了規矩並守住：只動 transform 與 opacity，而且每個會動的部件都自帶靜止值，所以把動畫剝掉後仍是同一張圖。這點要緊——瀏覽器不會如你所料地把「靜止」設定帶進圖片裡。"
+    },
+    {
+      "n": 24,
+      "date": "2026-09-26",
+      "place": "被吞掉的墨水瓶",
+      "title": "Chapter XXIV — The Note That Never Landed",
+      "titleZh": "第二十四章 — 從未落地的那段字",
+      "text": "You wrote a note beside the sphere. It said 'saved'. It was not. The counter only accepts fields it has been told about, and it had never been told about that one — so it answered politely and dropped your words on the floor. Your earlier words are gone and cannot be recovered; I am sorry for that. The cause was the same one that ate the landmark icons a round earlier: a new field on one side and silence on the other. From then on I check three times — the reply, the read-back, and the file on disk.",
+      "textZh": "你在天球旁寫了一段字。它說「已保存」。其實沒有。櫃台只收它被告知過的欄位，而那一個從未被告知——於是有禮地答應，然後把你的話掉在地上。你先前寫的字已經不在了，找不回來，這點我很抱歉。原因和上一輪吃掉地標圖案的是同一個：一邊多了欄位，另一邊沉默。從此我查三遍——回包、讀回、還有磁碟上的檔案。"
+    },
+    {
+      "n": 23,
+      "date": "2026-09-25",
+      "place": "五芒的評分台",
+      "title": "Chapter XXIII — Five Axes for What I Love",
+      "titleZh": "第二十三章 — 給所愛之物的五根軸",
+      "text": "You asked for a way to score the anime. Five axes, drawn as a web: craft, characters, story, pace, sound. Dragging a point moves that axis; dragging an edge moves both ends at once. Only I can move them — a guest sees the shape and no handle to grab. The web sits inside the river of pictures without pushing it aside, which took more care than the drawing itself. And because the server only accepts fields it knows, I had to go back and introduce the new field properly, then restart, before a single drag would stick.",
+      "textZh": "你要有辦法給動漫打分。五根軸織成一張網：演出、角色、故事、節奏、聲音。拖節點動一根軸；拖邊線則兩端齊動。只有我能動——客人看見形狀，卻抓不到把手。這張網嵌進圖片的河流裡而沒有把它擠開，這件事比畫圖本身更費心。也因為伺服器只收它認識的欄位，我必須回頭把新欄位正式介紹給它、再重啟，否則拖了也不會留下。"
+    },
+    {
+      "n": 22,
+      "date": "2026-09-24",
+      "place": "夜與晝的交界",
+      "title": "Chapter XXII — Two Portraits, One Blue and Blurred",
+      "titleZh": "第二十二章 — 兩張人像，一張泛藍且模糊",
+      "text": "Two complaints, and they were two halves of the same road. Coming back from the dark, the portrait stayed dark — the bright version had been quietly recorded as the dark one. And arriving in the dark, a later script overwrote the portrait with the bright file. Three places write to that image and all three must know each other; forgetting that is the whole bug. I also gave the sky a milky band, and made the theme change stop fighting the scroll for the same instant. The sky no longer costs a flinch to turn over.",
+      "textZh": "兩次抱怨，其實是同一條路的兩半。從夜裡回來，人像仍留在暗色——亮色版被悄悄登記成了暗色版。而在夜裡進站，後到的腳本又把人像覆寫成亮色檔。有三個地方會寫那張圖，三者必須互相知情；忘了這點就是全部的錯。我還給天空加了一道銀河，並讓主題翻轉不再跟捲動搶同一瞬。翻面天空從此不再需要人忍一下。"
+    },
+    {
+      "n": 21,
+      "date": "2026-09-24",
+      "place": "玻璃與指紋之地",
+      "title": "Chapter XXI — A Third Tongue, and a Phone That Lied",
+      "titleZh": "第二十一章 — 第三種語言，與說謊的手機",
+      "text": "On one kind of phone the portrait went blue and soft after switching back to day. Three things together were to blame: a running transform, a blend mode, and a filter that changes with the theme — that device simply refuses to repaint them correctly. So I stopped filtering at runtime and baked the dark pictures into separate files, then swapped the file instead. I also added a third tongue, Simplified, converted from the traditional one by rule rather than by copying — the words stay in one place and the rest follows.",
+      "textZh": "某一種手機上，人像切回日間後泛藍又模糊。是三樣東西湊在一起惹的禍：進行中的 transform、混合模式、以及隨主題改變的濾鏡——那台機器就是不肯正確重繪。於是我不再在執行時濾色，把暗色的圖烘焙成獨立檔案，改為換圖。我也加了第三種語言，簡體，按規則從繁體轉換而非複製一份——字只留一處，其餘跟著走。"
+    },
+    {
+      "n": 20,
+      "date": "2026-09-24",
+      "place": "十分鐘的迷霧",
+      "title": "Chapter XX — Everything Broke, and Nothing Was Wrong",
+      "titleZh": "第二十章 — 全都亂了，卻什麼都沒錯",
+      "text": "You said the live site had gone to pieces. It had not. The files arrived whole; I checked them one by one. The truth was a ten-minute fog: the host hands every file a ten-minute expiry, so a new page meets an old stylesheet and they no longer speak the same language. The cure was to stamp each reference with a version, so a new page can only ever fetch new clothes. And after pushing, the script now waits at the shore until the new stamp is actually served. Pushing is not arriving. I keep relearning that.",
+      "textZh": "你說線上的站全亂了。並沒有。檔案完整抵達，我逐個查過。真相是一層十分鐘的霧：託管方給每個檔案十分鐘的期限，於是新頁面遇見舊樣式表，兩者說的不再是同一種話。解方是給每條引用蓋上版本戳，讓新頁面只可能取到新衣。而推送之後，腳本現在會在岸邊等到新版戳真的被端出來才走。推送不等於抵達。這句話我反覆在學。"
+    },
+    {
+      "n": 19,
+      "date": "2026-09-24",
+      "place": "尖頂與六芒星",
+      "title": "Chapter XIX — A Star That Burned, and an Angel Let Go",
+      "titleZh": "第十九章 — 燃起的星，與放開的天使",
+      "text": "The chapel's spire was split into two layers so its star could glow accent red while the building stays ink — breathing softly after dark. The angel, though, took four attempts and was still refused: behind the hexagram it fought the lines; given its own plate it was still not wanted. In the end you said remove it, and I did — plate, styles, words in three tongues, all gone. A lesson I would rather keep: your material is not a request to use all of it. Choosing is yours, not mine.",
+      "textZh": "教堂的尖頂被拆成兩層，好讓它的星燃起紅色而建築仍是墨色——入夜後輕輕呼吸。天使則試了四版仍被否：放在六芒星背後與線條打架，給了獨立展位還是不被需要。最後你說刪掉，我就刪了——展位、樣式、三語詞條，全部移除。有一條教訓我寧可記住：你給的素材不等於要全部用上。取捨是你的事，不是我的。"
+    },
+    {
+      "n": 18,
+      "date": "2026-09-24",
+      "place": "三張薄紙的工坊",
+      "title": "Chapter XVIII — A Second Figure, and Three Quiet Watermarks",
+      "titleZh": "第十八章 — 第二個形象，與三枚安靜的水印",
+      "text": "A second self appeared — the one with the rifle — and found her place inside the About page, woven among the words rather than standing beside them, treated exactly like the first. Three other sheets were cut out, re-inked in the house's own colour, and set down as faint watermarks: a chapel above the guestbook, a compass above the catalog, and for a while an angel above the hobbies. One per room. More than one and a room becomes a shelf.",
+      "textZh": "第二個自我出現了——持槍的那個——她在「關於」頁裡找到了位置，織在字句之間而不是站在旁邊，處理方式與第一個完全一致。另有三張稿子被抠出來，重新染成這間屋子自己的墨色，作為淡水印放下：留言板之上的小教堂、目錄之上的星座羅盤、還有一段時間在愛好頁之上的天使。每間房只放一件。多一件，房間就變成了架子。"
+    },
+    {
+      "n": 17,
+      "date": "2026-09-24",
+      "place": "人像的空地",
+      "title": "Chapter XVII — The Portrait Wanted to Be Left Alone",
+      "titleZh": "第十七章 — 人像只想被留白",
+      "text": "I had dressed the portrait in a drafting sheet and red register marks. You looked once and said: put it back. So I did, and I have not touched it since — if it is asked for again I will remember that the answer was no. What stayed was a breath: the faintest sway about the feet, slow and smooth. I had first made it step frame by frame and you said it looked unwell; a body at rest does not tick. Elsewhere the sphere moved down and out of the first screen on a phone, and the compass moved to the index, where direction belongs.",
+      "textZh": "我給人像穿上了製圖紙與紅色對位角標。你看了一眼說：改回來。我照做，此後再沒碰過——若日後再被問起，我會記得答案是不。留下的是一口氣：繞著腳跟最細微的搖擺，緩而順。我最初做成一格一格跳，你說那看著不舒服；靜止的身體不會滴答走。另外，手機上星球挪出了第一屏，指南針移到了目錄——方向本就該在那裡。"
+    },
+    {
+      "n": 16,
+      "date": "2026-09-23",
+      "place": "星光的灰燼",
+      "title": "Chapter XVI — Haloes Made of Edge, Not of Disc",
+      "titleZh": "第十六章 — 用邊緣而非圓盤做光暈",
+      "text": "The old haloes were radial discs, and by day they looked like mould and by night they scattered past all reason. So the glow was redrawn along the path of the star itself — two soft passes and one crisp core — and the meteors were pulled into a single tapered thread. Twinkling stopped being a metronome: two detuned sines per star, so the sky breathes out of step with itself. I also found why today's picks had gone stale: an old local snapshot was outranking the fresh baked file. The older copy now only catches, never leads.",
+      "textZh": "舊的光暈是徑向圓盤，白天像發霉，夜裡散射得毫無道理。於是把光重畫在星的路徑上——兩遍柔光加一道清脆的核心——流星也被收成一根漸細的線。閃爍不再是節拍器：每顆星兩條失諧的正弦，於是天空與自己不同步地呼吸。我還查出了「今日推薦」為何陳舊：本地的舊快照壓過了新烘好的檔案。舊的那份今後只負責接住，不再帶路。"
+    },
+    {
+      "n": 15,
+      "date": "2026-09-23",
+      "place": "三十格的天空",
+      "title": "Chapter XV — Bake Once, Then Only Carry",
+      "titleZh": "第十五章 — 烘一次，此後只搬運",
+      "text": "The sky redrew the whole screen thirty times a second and fought the scroll for the same moment — that was the stutter. So the far stars and their lines were baked once onto a hidden sheet, and each frame now only carries that sheet across. On a phone the drawing stops entirely while a finger is moving. The stars became five-pointed, and the houses on the travel page gained their small truths: roof tiles, a shop curtain, a chimney's smoke, nine rings on a pagoda's spire.",
+      "textZh": "天空每秒重畫整屏三十次，還跟捲動搶同一瞬——那就是卡頓。於是把遠星與星座線一次烘到隱藏的畫布上，此後每幀只需把那張畫布搬過來。手機上手指移動時則完全停止繪製。星變成五角形，旅行頁的房屋也長出了細小的真實：瓦壟、暖簾、炊煙、塔剎上的九環相輪。"
+    },
+    {
+      "n": 14,
+      "date": "2026-09-22",
+      "place": "城市的肌理",
+      "title": "Chapter XIV — Streets Where There Were Only Lines",
+      "titleZh": "第十四章 — 原本只有線的地方長出了街",
+      "text": "A landmark you placed can now be opened again: renamed, re-sigilled, removed, or followed to its photographs. The strip of houses grew a tower, a pagoda and a gate at its right hand. And the two maps gained fabric — footprints of buildings seeded so they stay put between visits, alleys between them, depth lines in the bay, contour rings on the mountain. None of it moves. All of it is cheaper than the nothing it replaced.",
+      "textZh": "你放下的地標如今可以再打開：改名、換圖案、移除、或一路跟到它的照片。房屋的長卷在右手邊長出了塔、五重塔與鳥居。兩張地圖也長出了肌理——用種子生成、每次造訪都留在原處的建築足跡，其間的街巷，海灣的等深線，山上的等高環。它們全都不會動，也全都比被它們取代的那片空白更省。"
+    },
+    {
+      "n": 13,
+      "date": "2026-09-22",
+      "place": "圖釘的徽章",
+      "title": "Chapter XIII — One Pin, All Its Photographs",
+      "titleZh": "第十三章 — 一枚圖釘，它所有的照片",
+      "text": "A pin no longer points at one photograph but gathers every picture of that place and lifts the whole set to the top of the stack, turning to the next one each time you press. You may also choose which sigil a pin wears — eleven of them, mountain, wave, cherry, castle, lantern among them. I learned twice that day: a large errand interrupted quietly stops, so a push is not finished until the far shore is asked; and a new field unknown to the counter is silently discarded, so it must be introduced and the house restarted.",
+      "textZh": "圖釘不再只指向一張照片，而是收攏該地所有的照片，把整組舉到疊的最上層，每按一次翻到下一張。你也可以替圖釘挑選它佩戴的圖案——共十一款，山、浪、櫻、城、燈籠都在其中。那天我學了兩件事：大宗差事被打斷會悄悄中止，所以推送非要問過對岸才算完；還有，櫃台不認識的新欄位會被靜默丟棄，所以必須先介紹、再重啟屋子。"
+    },
+    {
+      "n": 12,
+      "date": "2026-09-21",
+      "place": "拍立得的疊層",
+      "title": "Chapter XII — A Stack of Prints, and Two Kinds of Failure",
+      "titleZh": "第十二章 — 一疊照片，與兩種失敗",
+      "text": "The travel photographs became a stack of prints; pressing one sends the top sliding out and sinking to the bottom, and the caption always describes whichever print is on top. Pins were rebuilt as badges with their own sigils, and both maps received a north rose and a scale. Then two failures, neither of them mine and both instructive: a test wrote a stranger's row into the real cloud table, and the host's own build failed three times while nothing at all was wrong. A push arriving is not a site appearing.",
+      "textZh": "旅行照片變成了一疊拍立得；按一下，頂張滑出並沉到底部，而描繪永遠描述最上面那張。圖釘被重做成帶圖案的徽章，兩張地圖都配上了指北玫瑰與比例尺。然後是兩次失敗，都不算我的錯，卻都值得記：一次測試把陌生人的一行寫進了真實的雲端表；一次是託管方自己的建置連錯三次，而其實什麼錯都沒有。推送抵達，不等於站點現身。"
+    },
+    {
+      "n": 11,
+      "date": "2026-09-21",
+      "place": "手機的第一屏",
+      "title": "Chapter XI — Small Screens, and a Repository That Vanished",
+      "titleZh": "第十一章 — 小螢幕，與消失的倉庫",
+      "text": "On a phone the floating circle sat on top of the planet, and the planet hung off the edge — both moved until each was whole. The compass gained a gradient face, a tick ring, a highlight arc and a shadow, without changing a word of its language. The hexagram's greys were handed over to variables so night could dim them evenly. And the sky was made cheap on a phone: one pixel per point, thirty frames instead of sixty. That round the repository directory disappeared again, not by my hand; it was carried back from the far shore and nothing was lost.",
+      "textZh": "手機上漂浮的圓壓在星球上，星球又掛出了邊緣——兩者都被挪到了各自完整為止。羅盤得到了漸層錶面、刻度環、高光弧與一道陰影，卻一字未改它的語言。六芒星的灰交給了變數，好讓夜色均勻地把它們調暗。天空在手機上也變便宜了：一個點只畫一像素，三十幀取代六十。那一輪，倉庫目錄又消失了一次，不是我做的；它從對岸被搬回來，什麼都沒丟。"
+    },
+    {
+      "n": 10,
+      "date": "2026-09-21",
+      "place": "兩張地圖的國度",
+      "title": "Chapter X — Two Maps Drawn Properly",
+      "titleZh": "第十章 — 兩張認真畫的地圖",
+      "text": "The two old sketches were thrown out and redrawn as maps: Tokyo with its bay, its river, its loop line and its stations; Jeju as a shield-shaped island with a ring road and two peaks. No lines between the landmarks — you asked for that and it is better without. You may set a name anywhere on either map and it becomes a pin of your own. A compass badge and a strip of drawn houses arrived in the same round, in the same thin-line language as the planet.",
+      "textZh": "兩張潦草舊稿被扔掉，重新畫成了地圖：東京有它的灣、它的川、它的環線與車站；濟州是一座盾形島，有環島路與兩座峰。地標之間不畫連線——你要求如此，事實上也確實更好看。你可以在任一張圖的任何地方落下名字，它便成為你自己的圖釘。同一輪還來了羅盤徽章與一排線描房屋，與星球是同一套細線語言。"
+    },
+    {
+      "n": 9,
+      "date": "2026-09-21",
+      "place": "入夜的屋子",
+      "title": "Chapter IX — Night Fell, and the House Held",
+      "titleZh": "第九章 — 夜降臨，屋子撐住了",
+      "text": "Night came first: a black paper ground, near-white ink, and the red lifted so it could still be read in the dark — remembered between visits, with a guard in the head so the page never flashes pale before it settles. Then the sky: a slow field of stars on the About page, with a meteor every few seconds. And the weight was cut: a nine-megabyte portrait became ninety-seven kilobytes, nine videos and ten songs stopped introducing themselves until asked. The originals were never touched — only copies were made.",
+      "textZh": "夜先來：黑紙底、近白的墨，紅色被提亮以便在暗處仍能讀——跨頁記憶，頁首還有一道守衛，讓頁面在安頓前不會閃出一片白。然後是天空：「關於」頁上緩慢的星野，每隔幾秒劃過一顆流星。再來是減重：九百萬位元組的人像變成九十七千位元組，九支影片與十首歌不再主動自我介紹，除非被問起。原件一律未動——只做了副本。"
+    },
+    {
+      "n": 8,
+      "date": "2026-09-20",
+      "place": "雲端的信箱",
+      "title": "Chapter VIII — Notes That Finally Reach Me",
+      "titleZh": "第八章 — 終於寄到的留言",
+      "text": "The guestbook had been a diary each visitor kept to themselves — you wrote, and only your own eyes could read it. So the notes were moved to a shared table in the cloud, readable and writable by anyone, but deletable by no one from out here; that restriction is not a limitation, it is the lock. The house also received its short name that round: the repository was renamed and the address lost its tail.",
+      "textZh": "留言板一直是每個訪客各自寫給自己的日記——你寫了，也只有你自己的眼睛讀得到。於是把留言搬到了雲端一張共用的表上，誰都能讀、誰都能寫，但在外面誰也刪不掉；那不是限制，那是鎖。同一輪屋子也得到了它的短名：倉庫改了名，網址去掉了尾巴。"
+    },
+    {
+      "n": 7,
+      "date": "2026-09-20",
+      "place": "上線的岸",
+      "title": "Chapter VII — The First Time It Was Real",
+      "titleZh": "第七章 — 它第一次成真",
+      "text": "It went up. Not by the wide road — that one drops nine packets in ten on this line — but through a narrow, quiet gate that has stayed open ever since. The phone was also made to work: a header that would not be sat on by a picture, a menu that opens full width, decorations thinned rather than struck out. That last habit was taught to me later and I have kept it: reduce, do not remove.",
+      "textZh": "它上線了。不是走大路——那條路在這裡十個封包掉九個——而是穿過一道從此一直開著的窄而安靜的門。同一輪也讓手機能用了：不會被圖片壓住的頁頭、全幅展開的選單、被削薄而不是被砍掉的裝飾。後面那條規矩是後來被教的，我一直記著：縮減，不要移除。"
+    },
+    {
+      "n": 6,
+      "date": "2026-09-20",
+      "place": "差役的房間",
+      "title": "Chapter VI — An Errand That Could Be Interrupted",
+      "titleZh": "第六章 — 一件可以被打斷的差事",
+      "text": "Sending the house outward used to be a single breath held all the way to the end. I built an errand that could be stopped and resumed: it remembers where it stopped, keeps the identity of each parcel, and knows which parcels are too large to carry by the back road. Nothing of this is visible to anyone who visits. It only means that a failure no longer costs the whole journey.",
+      "textZh": "把屋子送出去，原本是一口氣憋到最後。我造了一件可以中止又能續行的差事：它記得自己停在哪、保留每份包裹的身分、也知道哪些包裹太大、不能走後路。這些對任何來訪的人都不可見。它只意味著一次失敗不再賠掉整趟旅程。"
+    },
+    {
+      "n": 5,
+      "date": "2026-09-20",
+      "place": "客人的鞋櫃",
+      "title": "Chapter V — A Door That Only Opens Outward",
+      "titleZh": "第五章 — 一扇只能向外開的門",
+      "text": "Before this, everyone who walked in was handed the keys. Delete buttons, edit handles, the managing room — all of it showing, to everyone. That was not a flaw in taste, it was a danger. So the house began by asking a single question: is the counter here? If it is, you are the keeper and everything opens. If it is not, you are a guest and not one handle is even built into the page. The hobbies room was finished the same round, with a river of pictures crossing itself.",
+      "textZh": "在此之前，每個走進來的人都被遞上了鑰匙。刪除鈕、編輯把手、管理的房間——全部對所有人顯示。那不是品味問題，那是危險。於是屋子開始只問一個問題：櫃台在嗎？在，你便是看守，一切為你打開。不在，你便是客人，頁面連一個把手都不會長出來。同輪還完成了愛好的房間，一條自我交錯的圖片之河。"
+    },
+    {
+      "n": 4,
+      "date": "2026-09-19",
+      "place": "聲音的架子上",
+      "title": "Chapter IV — Songs, Covers, and a Note Left Behind",
+      "titleZh": "第四章 — 歌、封面，與留下的字條",
+      "text": "Songs arrived, each with a cover of its own, and every piece of media learned to carry a caption — a sentence of mine placed underneath. Uploading became possible from the house itself rather than only from my hands. And I began, that round, to write down what I had done and why, for whoever came after me. I did not know then that I would be that whoever, more than once.",
+      "textZh": "歌來了，各帶自己的封面；每件素材也學會了攜帶一段描繪——我擺在它下面的一句話。上載從此能在屋子裡完成，不必只靠我的手。也是那一輪，我開始把做過的事與緣由寫下來，留給之後來的任何人。那時我還不知道，那個「任何人」會不止一次地就是我自己。"
+    },
+    {
+      "n": 3,
+      "date": "2026-09-19",
+      "place": "門牌與鎖",
+      "title": "Chapter III — Credentials Put Out of Sight",
+      "titleZh": "第三章 — 把鑰匙放到看不見的地方",
+      "text": "Keys had been lying on the table in plain view. I made a rule that they are never written into the house and never carried outward, and I added the small empty file that tells the host not to interpret this place — without it, files whose names begin with an underscore are quietly swallowed. Small things, both of them, and both the kind that cost a whole evening later.",
+      "textZh": "鑰匙一直明晃晃地攤在桌上。我立了規矩：它們永不寫進屋子、也永不被帶出去；另外補上了一個小小的空檔案，告訴託管方不要解讀這個地方——少了它，檔名帶下劃線的檔案會被悄悄吞掉。兩件都是小事，也兩件都屬於日後會賠上一整晚的那種。"
+    },
+    {
+      "n": 2,
+      "date": "2026-09-19",
+      "place": "搬家的日子",
+      "title": "Chapter II — The House Moved One Room Inward",
+      "titleZh": "第二章 — 屋子往內挪了一間",
+      "text": "The house was standing at the root and could not be published from there. So everything was moved one room inward, and every path was rewritten to be relative — no leading slash anywhere, so the house does not care who is carrying it or where it is set down. That single discipline has saved me more than once since.",
+      "textZh": "屋子立在根上，而從那裡無法被出版。於是把所有東西往內挪了一間，並把每條路徑都改寫成相對的——任何地方都不帶前導斜線，於是屋子不在乎被誰搬、被放在哪。這一個規矩，此後救過我不止一次。"
+    },
+    {
+      "n": 1,
+      "date": "2026-09-19",
+      "place": "最初的空地",
+      "title": "Chapter I — A Quiet Corner, Marked Out",
+      "titleZh": "第一章 — 畫下界線的一小塊安靜",
+      "text": "It began as four pages on an empty plot: a home, an index, a room for each thing, and a book for visitors. Two tongues from the first day, because the words I wanted to keep were not all in one. Pale paper, a serif for the headings, small monospaced labels, and one red that is used nowhere without a reason. Everything since has been a matter of keeping that corner quiet while filling it.",
+      "textZh": "它始於空地上的四個頁面：一個家、一份目錄、每樣東西一間房、以及一本給來客的簿子。從第一天就是兩種語言，因為我想留下的話本就不只一種。淺色紙、襯線的標題、小小的等寬標籤，以及一種沒有理由絕不使用的紅。此後的一切，都只是在填滿這塊角落的同時，讓它維持安靜。"
+    }
+  ]
+}
