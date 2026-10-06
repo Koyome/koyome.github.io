@@ -1,25 +1,172 @@
 /* ============================================================
    Koyome.me — style.css
    pale paper · serif italic · dark-red signal
+   ------------------------------------------------------------
+   THIS FILE IS TOKEN-DRIVEN. No component below should carry a
+   raw px length, font size, duration or shadow — every one of
+   them resolves through the scales in :root. If a step is
+   missing, add it to the scale; do not hard-code it.
+
+   ── Breakpoint contract ─────────────────────────────────────
+     ≤ 480px   pocket      single column, type steps down
+     ≤ 720px   phone       gutters tighten, menu becomes a sheet
+     ≤ 880px   tablet      home collapses, rivers straighten
+     ≤ 1399px  mid         decoration rail thins out
+     ≥ 1400px  wide        full board + margins + deco rail
+   Nothing in this file may open a media query outside these.
+
+   ── Spacing ruler (4px grid, 2px sub-step) ──────────────────
+     sp-1 2   sp-2 4   sp-3 6   sp-4 8   sp-5 12  sp-6 16
+     sp-7 20  sp-8 24  sp-9 32  sp-10 40 sp-11 56 sp-12 72
+     sp-13 96 sp-14 128
    ============================================================ */
 :root {
-  --bg: #e4e2df;
-  --bg-deep: #dcdad6;
-  --panel: #ebe9e6;
-  --ink: #3b3a38;
-  --muted: #8b8985;
-  --line: #c9c7c2;
-  --accent: #9e2b25;
-  --accent-soft: rgba(158, 43, 37, 0.08);
+  /* ══ Palette ══════════════════════════════════════════════
+     three papers, three inks, one signal. Nothing else is a
+     colour in this design. */
+  --bg: #e4e2df;                          /* page paper */
+  --bg-deep: #dcdad6;                     /* sunk paper — media wells */
+  --panel: #ebe9e6;                       /* raised paper — plates, panels */
+  --ink: #3b3a38;                         /* primary text */
+  --muted: #8b8985;                       /* secondary text */
+  --line: #c9c7c2;                        /* hairline rules & borders */
+  --accent: #9e2b25;                      /* the single signal colour */
+  --accent-soft: rgba(158, 43, 37, 0.08); /* signal wash */
+
+  /* sitting ON a photograph (labels, play discs) — the paper inverts
+     there, so these do NOT flip with the theme */
+  --on-scrim: #f3f1ee;
+  --scrim: rgba(59, 58, 56, 0.45);
+  --scrim-soft: rgba(59, 58, 56, 0.5);
+
+  /* ══ Typography ═══════════════════════════════════════════
+     One ladder for the site. Micro mono labels at the bottom,
+     editorial serif display at the top. ~1.15 between rungs. */
+  --fs-2xs: 8.5px;      /* map geo, radar ticks, deck hint */
+  --fs-xs: 9px;         /* chips · tags · meta · media labels */
+  --fs-sm: 10px;        /* eyebrows · field labels · footer */
+  --fs-md: 11px;        /* mono buttons · inline links · captions */
+  --fs-lg: 12.5px;      /* secondary prose · notes · card excerpts */
+  --fs-body: 14px;      /* list rows · form fields */
+  --fs-lead: 15px;      /* running text · prose · captions */
+  --fs-sub: 17px;       /* lead paragraph · card title · section zh */
+  --fs-h4: 19px;        /* small heading · row title on phones */
+  --fs-h3: 21px;        /* brand */
+  --fs-h2: 28px;        /* heading floor */
+  --fs-h1: 34px;        /* display floor */
+  /* fluid display sizes — the four places type is allowed to be big */
+  --fs-display-1: clamp(40px, 7vw, 66px);     /* home name */
+  --fs-display-2: clamp(38px, 7.4vw, 62px);   /* sigil name */
+  --fs-display-3: clamp(28px, 5vw, 40px);     /* entry title */
+  --fs-display-4: clamp(19px, 2.6vw, 28px);   /* catalog row title */
+  --fs-display-5: clamp(19px, 2.4vw, 24px);   /* river item name */
+
+  /* weight — two values, applied explicitly, never inherited */
+  --fw-normal: 400;
+  --fw-medium: 500;
+
+  /* line heights — five rungs. Mono labels stay at --lh-snug;
+     only running prose is allowed past --lh-body. */
+  --lh-display: 1.12;
+  --lh-tight: 1.35;
+  --lh-snug: 1.5;
+  --lh-body: 1.9;
+  --lh-relaxed: 2;
+  --lh-loose: 2.2;
+
+  /* letter-spacing — the whole tracking ladder, 9 steps */
+  --ls-tight: 0.01em;    /* serif display, almost untouched */
+  --ls-snug: 0.03em;     /* body copy — a whisper of air */
+  --ls-normal: 0.05em;   /* prose */
+  --ls-wide: 0.1em;      /* small mono */
+  --ls-wider: 0.15em;    /* mono labels */
+  --ls-widest: 0.22em;   /* mono links & buttons */
+  --ls-caps: 0.3em;      /* eyebrow · footer */
+  --ls-caps-lg: 0.42em;  /* section English tag */
+  --ls-mega: 0.55em;     /* loader word */
+
+  /* ══ Spacing ══════════════════════════════════════════════
+     See the ruler in the header. Every margin, padding and gap
+     in this file is one of these — no arbitrary numbers. */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 8px;
+  --sp-5: 12px;
+  --sp-6: 16px;
+  --sp-7: 20px;
+  --sp-8: 24px;
+  --sp-9: 32px;
+  --sp-10: 40px;
+  --sp-11: 56px;
+  --sp-12: 72px;
+  --sp-13: 96px;
+  --sp-14: 128px;
+
+  /* ══ Layout ═══════════════════════════════════════════════
+     Three column widths, one gutter pair. The header and every
+     board share --gutter, so their left edges line up exactly. */
+  --shell: 1080px;       /* board pages: home · catalog · hobbies */
+  --shell-read: 780px;   /* reading column: entry · guestbook */
+  --shell-form: 860px;   /* admin forms */
+  --shell-media: 480px;  /* a single media plate */
+  --shell-note: 560px;   /* a margin note */
+  --gutter: 40px;        /* desktop side padding */
+  --gutter-sm: 20px;     /* phone side padding */
+
+  /* ══ Radius ═══════════════════════════════════════════════
+     the site is a printed plate: nearly square, one pill. */
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-pill: 999px;
+  --r-round: 50%;
+
+  /* ══ Elevation ════════════════════════════════════════════
+     paper never floats far — four soft steps, plus the filter
+     variants used by free-standing figures and emblems. */
+  --shadow-1: 0 4px 12px rgba(60, 58, 54, 0.07);
+  --shadow-2: 0 10px 26px rgba(60, 58, 54, 0.10);
+  --shadow-3: 0 14px 40px rgba(60, 58, 54, 0.10);   /* the card lift */
+  --shadow-4: 0 24px 60px rgba(60, 58, 54, 0.14);
+  --shadow: var(--shadow-3);                        /* legacy alias */
+  --drop-fig: 0 16px 26px rgba(60, 58, 54, 0.16);
+  --drop-deco: 0 6px 14px rgba(60, 52, 44, 0.16);
+  --drop-mark: 0 10px 16px rgba(60, 58, 54, 0.13);
+  --drop-float: 0 10px 26px rgba(40, 38, 35, 0.18);
+
+  /* ══ Motion ═══════════════════════════════════════════════
+     five durations, one curve. Hover/focus never exceeds
+     --dur-3; only page-level fades go slower. */
+  --dur-1: 0.15s;
+  --dur-2: 0.22s;
+  --dur-3: 0.3s;
+  --dur-4: 0.45s;
+  --dur-5: 0.7s;
+  --ease: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --ease-out: ease-out;
+
+  /* ══ Focus ════════════════════════════════════════════════
+     one ring for the whole site; components may only shrink the
+     offset, never drop it. */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* ══ Typefaces ════════════════════════════════════════════ */
   --serif: Georgia, "Times New Roman", "Songti SC", "STSong", "PMingLiU", "SimSun", serif;
   --mono: "SFMono-Regular", ui-monospace, Consolas, "Courier New", monospace;
   --sans: -apple-system, "PingFang TC", "PingFang SC", "Microsoft JhengHei", "Segoe UI", sans-serif;
-  --shadow: 0 14px 40px rgba(60, 58, 54, 0.10);
-  /* starfield (entry t2) + travel map accents */
+
+  /* ══ Decorations ══════════════════════════════════════════ */
+  /* starfield (entry t2) + travel map accents — entry.js reads
+     --star / --star-line / --meteor directly, do not rename */
   --star: #7d8798;
   --star-line: rgba(110, 118, 132, 0.32);
   --meteor: #9e2b25;
   --frame-mark: #b3b0aa;
+  /* floating geometry (deco.js). Deliberately NOT tied to --frame-mark:
+     these hairlines must stay legible on both papers. */
+  --deco-line: #b4b2a9;
+  --deco-accent: #9e2b25;
   /* home sigil line tones (light paper) — dark theme re-tunes them
      below so the weave stays quiet on black paper */
   --sigil-dash: #b3b0aa;
@@ -44,7 +191,15 @@
   --line: #3c3a36;
   --accent: #d4604f;
   --accent-soft: rgba(212, 96, 79, 0.13);
-  --shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  /* elevation deepens: black paper needs a heavier penumbra to read */
+  --shadow-1: 0 4px 14px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 12px 30px rgba(0, 0, 0, 0.50);
+  --shadow-3: 0 16px 44px rgba(0, 0, 0, 0.55);
+  --shadow-4: 0 28px 70px rgba(0, 0, 0, 0.62);
+  --drop-fig: 0 16px 26px rgba(0, 0, 0, 0.55);
+  --drop-deco: 0 6px 14px rgba(0, 0, 0, 0.45);
+  --drop-mark: 0 10px 18px rgba(0, 0, 0, 0.50);
+  --drop-float: 0 10px 26px rgba(0, 0, 0, 0.55);
   --star: #e6ecf7;
   --star-line: rgba(196, 206, 224, 0.30);
   --meteor: #f2efe9;
@@ -75,9 +230,11 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.9;
+  font-size: var(--fs-lead);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-normal);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
   overflow-x: clip; /* tilted figures & ghost digits must not cause h-scroll */
 }
@@ -85,30 +242,51 @@ body {
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; display: block; }
 
-::selection { background: var(--accent); color: #f3f1ee; }
+/* the attribute always means hidden — several components set it from JS
+   and a stray `display` declaration must never be able to undo it */
+[hidden] { display: none !important; }
+
+::selection { background: var(--accent); color: var(--on-scrim); }
+
+/* ---------- Focus -------------------------------------------------
+   One ring for every focusable thing, drawn only for keyboards.
+   Zero specificity on purpose: any component below may restyle its
+   own ring, but nothing may remove the affordance entirely. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+/* fields already signal focus with their underline — give them the
+   same ring rather than a second colour language */
+:where(input, select, textarea):focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
 
 /* ---------- Loading curtain ---------- */
 .loader {
   position: fixed; inset: 0; z-index: 200;
   background: var(--bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 34px;
-  transition: opacity 0.7s ease, visibility 0.7s;
+  gap: var(--sp-9);
+  transition: opacity var(--dur-5) var(--ease-out), visibility var(--dur-5);
 }
 .loader.done { opacity: 0; visibility: hidden; }
 .loader svg { width: 190px; height: 190px; animation: slow-spin 40s linear infinite; }
 @keyframes slow-spin { to { transform: rotate(360deg); } }
 .loader-word {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.55em;
-  color: var(--muted); text-indent: 0.55em;
+  font-family: var(--mono); font-size: var(--fs-md); letter-spacing: var(--ls-mega);
+  line-height: var(--lh-snug);
+  color: var(--muted); text-indent: var(--ls-mega);
 }
 .loader-bar { width: 190px; height: 1px; background: var(--line); position: relative; }
 .loader-bar i {
   position: absolute; left: 0; top: -0.5px; height: 2px; width: 0;
-  background: var(--accent); transition: width 0.15s linear;
+  background: var(--accent); transition: width var(--dur-1) linear;
 }
 .loader-num {
-  font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.2em;
+  font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); letter-spacing: var(--ls-wide);
+  line-height: var(--lh-snug);
 }
 
 /* ---------- Site header ---------- */
@@ -117,40 +295,42 @@ img { max-width: 100%; display: block; }
    swallow the menu before). */
 .site-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 40px;
+  padding: var(--sp-7) var(--gutter);
   position: sticky; top: 0; z-index: 100;
   background: var(--bg);
 }
-.header-left { display: flex; align-items: baseline; gap: 20px; }
+.header-left { display: flex; align-items: baseline; gap: var(--sp-7); }
 .brand {
-  font-family: var(--serif); font-style: italic; font-size: 21px;
-  color: var(--ink); letter-spacing: 0.02em;
+  font-family: var(--serif); font-style: italic; font-weight: var(--fw-normal);
+  font-size: var(--fs-h3); line-height: var(--lh-tight);
+  color: var(--ink); letter-spacing: var(--ls-tight);
 }
 .brand .dot { color: var(--accent); font-style: normal; }
 
 /* language switch (top-left, next to the brand) */
-.lang-switch { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); }
+.lang-switch { display: flex; align-items: baseline; gap: var(--sp-4); font-family: var(--mono); }
 .lang-switch button {
   border: none; background: transparent; cursor: pointer;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em;
-  color: var(--muted); padding: 2px 0; border-bottom: 1px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
+  font-family: var(--mono); font-size: var(--fs-sm); letter-spacing: var(--ls-wider);
+  line-height: var(--lh-snug); border-radius: var(--r-1);
+  color: var(--muted); padding: var(--sp-1) 0; border-bottom: 1px solid transparent;
+  transition: color var(--dur-2), border-color var(--dur-2);
 }
 .lang-switch button:hover { color: var(--ink); }
 .lang-switch button.active { color: var(--accent); border-color: var(--accent); }
-.lang-switch .sep { color: var(--line); font-size: 10px; }
+.lang-switch .sep { color: var(--line); font-size: var(--fs-sm); }
 
 /* ---------- Pages menu (top right) ---------- */
 .menu { position: relative; }
 .menu-btn {
   width: 44px; height: 44px;
-  border: 1px solid var(--line); background: transparent;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-  cursor: pointer; transition: border-color 0.25s;
+  border: 1px solid var(--line); background: transparent; border-radius: var(--r-1);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-3);
+  cursor: pointer; transition: border-color var(--dur-3);
 }
 .menu-btn i {
-  display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--muted);
-  transition: background 0.25s, transform 0.25s;
+  display: block; width: 4px; height: 4px; border-radius: var(--r-round); background: var(--muted);
+  transition: background var(--dur-3), transform var(--dur-3);
 }
 .menu-btn:hover { border-color: var(--accent); }
 .menu-btn:hover i { background: var(--accent); }
@@ -162,20 +342,26 @@ img { max-width: 100%; display: block; }
   position: absolute; right: 0; top: 56px; z-index: 60;
   min-width: 216px;
   background: var(--panel); border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  padding: 8px 0;
-  opacity: 0; visibility: hidden; transform: translateY(-8px);
-  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+  box-shadow: var(--shadow-3);
+  padding: var(--sp-4) 0;
+  opacity: 0; visibility: hidden; transform: translateY(calc(-1 * var(--sp-4)));
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), visibility var(--dur-2);
 }
 .menu.open .menu-panel { opacity: 1; visibility: visible; transform: none; }
 .menu-panel a {
-  display: flex; align-items: baseline; gap: 12px;
-  padding: 11px 20px;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.25em; color: var(--muted);
-  transition: color 0.2s, background 0.2s, padding-left 0.25s;
+  display: flex; align-items: baseline; gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-7);
+  font-family: var(--mono); font-size: var(--fs-md); letter-spacing: var(--ls-widest);
+  line-height: var(--lh-snug); color: var(--muted);
+  transition: color var(--dur-2), background var(--dur-2), padding-left var(--dur-3);
 }
-.menu-panel a .no { font-size: 9px; letter-spacing: 0.1em; color: var(--line); }
-.menu-panel a:hover { color: var(--accent); background: var(--accent-soft); padding-left: 27px; }
+.menu-panel a .no { font-size: var(--fs-xs); letter-spacing: var(--ls-wide); color: var(--line); }
+/* hover nudge: one 8px step in from the resting padding — the same
+   gesture the catalog rows use, so the site has one hover dialect */
+.menu-panel a:hover {
+  color: var(--accent); background: var(--accent-soft);
+  padding-left: calc(var(--sp-7) + var(--sp-4));
+}
 .menu-panel a.active, .menu-panel a.active .no { color: var(--accent); }
 
 /* ---------- Home: portrait + self-introduction ---------- */
