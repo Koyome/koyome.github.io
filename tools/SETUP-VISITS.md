@@ -31,12 +31,12 @@
         │
         │  POST  ip / 页面 / 经纬度  ──────▶  visits 表
         │                                      │
-        │                                      │  你打开 08 访客记录页
+        │                                      │  你打开 /visits.html
    server.js  ◀──── GET /api/visits ───────────┘
    读表 + 补全省市区和坐标
         │
         ▼
-   08 访客记录 IP LEDGER 表格里出现这一行
+   visits.html 的名册表里出现这一行
 ```
 
 **第一步**就是建这张表。**第二步**是让「补全地址」这一步从「只能到市级」升级成「能到区级」。
@@ -120,8 +120,8 @@ create policy "owner reads visits"
 
 ## 1-4 验证建好了
 
-打开桌面上的 `kstage-preview.html`（双击即可），滚到最下面的
-**08 访客记录 IP LEDGER**，看「云端」那一格：
+打开 <http://Koyome.me/visits.html>（站点导航第 05 项「访客 / Visitors」），看顶部的
+「线上登记 / ONLINE」那一格：
 
 - 写着 **`未连接 · 线上登记可用`** → 成功 🎉
 - 还写着 **`表还没建 · 需跑一次 tools/supabase-visits.sql`** → 回去检查 1-2、1-3
@@ -164,7 +164,7 @@ https://hvywwgbzzqrwjrxiwfhx.supabase.co/rest/v1/visits?select=*
 
 ## 1-5 顺手测一次（可选，但建议）
 
-1. 保持 `kstage-preview.html` 开着，点「自动刷新」。
+1. 打开 <http://Koyome.me/visits.html>，点顶部「自动 / AUTO」。
 2. **用手机**（流量，不要连同一个 Wi-Fi）打开你的线上站 `koyome.github.io`，随便点两页。
 3. 几秒后桌面那张表应该自己多出一行，来源列写着 **线上 ↑**。
 
@@ -210,8 +210,8 @@ git status --short
 
 ```
 ?? docs/js/visit-beacon.js     ← 线上登记的开关，就是它
-?? docs/journal.html            ← 日志页
-?? docs/data/journal.json       ← 日志内容
+?? docs/visits.html              ← 访客名册大页（导航第 05 项）
+?? docs/js/visits.js            ← 名册驱动
 ?? tools/supabase-visits.sql    ← 建表 SQL
 ?? tools/supabase-visits-harden.sql  ← 权限加固
 ?? tools/SETUP-VISITS.md        ← 本文档
@@ -230,7 +230,7 @@ push 完等 1–3 分钟（Pages 有 CDN 缓存），然后：
 
 **① 强刷一次线上站**（Ctrl+F5，或手机清除缓存重开）
 **② 用手机流量**打开 `koyome.github.io`，随便点两页
-**③ 回到电脑看 08 访客记录页**，点一下刷新
+**③ 回到电脑看 <http://Koyome.me/visits.html>**，点一下刷新
 
 应该多出一行，来源列写着 **线上 ↑**，所在地是「xx省xx市xx区」，经纬度一栏有数字。
 
@@ -309,7 +309,7 @@ push 完等 1–3 分钟（Pages 有 CDN 缓存），然后：
 
 ## 2-5 粘进去，当场生效
 
-1. 回到桌面的 `kstage-preview.html`，滚到 **08 访客记录 IP LEDGER**。
+1. 回到 <http://Koyome.me/visits.html>，用页面顶部那行「高德 KEY / AMAP KEY」。
 2. 找到 **高德 Key** 那一行，把 Key 粘进输入框。
 3. 点 **保存并生效**。
 

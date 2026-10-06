@@ -1,8 +1,111 @@
 # Koyome.me — 项目交接文档（AI Handover）
 
 > 写给下一个接管本项目的 AI（或人类开发者）：**读完这一份，即拥有继续开发的全部上下文。**
-> 最后更新：2026-10-07（第三十二轮：线上信标 + 独立 IP 名册页；第三十一轮：日志页 journal.html — 无职转生式叙事手记 + 访客 IP／区级地理位置记录；第三十轮为全站排版与设计语言 token 化打磨）
+> 最后更新：2026-10-07（第三十四轮：访客页/手记页三层防推送 + 名册视觉重做；第三十三轮：撤掉手记页，访客名册升为独立大页 `visits.html`；第三十二轮：线上信标 + Key 管理；第三十一轮：日志页 + 访客 IP 记录；第三十轮：全站排版 token 化）
+> 🔒 **推送前必读 §0.34**：`docs/` 就是 Pages 发布根，访客页与手记页绝不能上线。
+> 守卫命令 `node tools/check-private-pages.js`，必须打印 SAFE TO PUSH。
 > 仓库状态：本地 HEAD = `4e8dc46`，**远端 main 与之相同**（09-26 20:37 用户一键推送，R20–R24 已上线）｜ ⚠️ 常驻推送授权**已于 2026-09-23 取消**：AI 推送前必须逐次征得用户同意（§4.3）
+
+---
+
+## 0.34 第三十四轮速览（2026-10-07）：**访客页与手记页永不推送** + 名册视觉重做
+
+用户指示：「访客页面和手记页面都绝对不能推送线上」「IP 记录界面优化得更有科技感和朋克感」。
+
+### 一、绝不推送（硬要求，已三层设防）
+
+**关键事实：`docs/` 就是 GitHub Pages 的发布根目录**——留在里面的一切，push 即上线。
+
+**第 1 层 · `.gitignore`**
+```
+docs/visits.html        docs/js/visits.js        docs/css/visits.css
+docs/data/visits.json   tools/_archive/
+```
+文件留在本地继续用，本机服务照常提供；只是不进仓库。
+
+**第 2 层 · 导航也不静态写死**
+`header.js` 的 `PAGES` 里**没有** visits（原来在，已移除）。它与 admin 一样，
+由 `revealOwnerPages()` 在 `apiAvailable()` 为真时**运行时注入**。
+→ 线上（静态站）菜单里根本没有这个链接，不会出现死链。
+
+**第 3 层 · `tools/check-private-pages.js`（新增守卫）**
+`.gitignore` 是约定不是锁——`git add -f`、手滑的 `git add docs/`、某些工具都会绕过它。
+守卫检查**git 真正会发布什么**（`git add -A --dry-run` + `git ls-files`），
+而不是工作区恰好有什么。已实测能拦下 `git add -f docs/visits.html`。
+推送前跑：`node tools/check-private-pages.js` → 打印 `SAFE TO PUSH` 才安全。
+失败时给出可直接照抄的 `git rm --cached …` 命令。
+
+**顺带处理**：手记页曾被 06:07 的**自动提交**推上线过（实测线上 `journal.html` 等
+三个文件 200）。本轮已 `git rm --cached` 移出索引 → 这次推送会**把它们从线上撤掉**。
+内容归档在本地 `tools/_archive/`（35KB narrative + js，未推送）。
+`docs/data/visits.json` 从未进过仓库，线上 404，真实 IP **没有泄露过**。
+
+### 二、视觉重做：仪器面板
+
+样式**独立成 `docs/css/visits.css`**（同样 gitignore），从 `style.css` 移出——
+这是全站唯一允许"仪表盘"语域的页面，物理隔开才不会外溢到其它页面。
+
+**科技感来自仪表，不来自霓虹**：没有新强调色、没有紫渐变。全站纸/墨/单一朱红不变。
+- `.vs-titlebar` 反色铭牌条 `KOYOME / VISITOR LOG / OWNER ONLY` + 闪烁光标（唯一动效，
+  尊重 `prefers-reduced-motion`）
+- `.vs-wrap::before` 72px 栅格纹理 + mask 向下淡出（日间 0.55 / 暗色 0.9）
+- 四格读数用**发丝线分隔**（一块铣出来的整版，不是四张浮动卡）
+- 标签用 `[ ]` **直角括号**（反胶囊）；状态灯是**硬边小方块**，仅"活着"才亮并发红光
+- 数字全部 `tabular-nums`，测量值跳动时不抖
+- `.vs-when`：日期/时钟**上下两行**（见下）
+
+**踩坑**：
+1. 反色铭牌的字色**必须用 `--bg`，不能用 `--on-scrim`**——后者是给"压在照片上的
+   标签"用的固定浅色，不随主题翻转，用它会在暗色下变成浅底浅字。
+2. 暗色下铭牌里的朱红对比度不足，加 `[data-theme="dark"] .vs-titlebar::after/b { color:#e0705f }`。
+   这是全页唯一第二个红色值，且是**对比度修复**不是新颜色。
+3. 手机端 `table-layout: fixed` 后列宽百分比**必须容得下最窄的真实内容**：
+   27%/31%/42% 会让「2026-10-07 06:21」和 IP **互相重叠**。
+   最终 30%/36%/34%，且时间在 JS 里**主动拆成两个 span**（`.vs-when`），
+   不靠浏览器在空格处折行——否则折行点会撞到下一格，看起来像数据损坏。
+4. 状态长句要 `line-clamp:2` + `title` 属性，否则三行文字破坏面板横向节奏。
+
+**验证**：`tools/probe-visits-page.js` 28/28（导航可达且高亮、四格读数已填、
+三语、390px 无横向溢出、Key 框可用、console 干净）。
+另用临时截图脚本逐轮核对日/夜/手机三态，发现并修掉 4 个纯视觉缺陷
+（网格不可见、标题条浅底浅字、时间折行、列重叠）；**截图脚本与产物已清理，未入库**。
+回归：test-static / audit-i18n(243×3) / audit-links / probe-visits(18) /
+probe-visit-online(13) / probe-visits-page(28) / probe-ip-page(15) / probe-amap(36) 全绿。
+- **未提交、未推送**（§4.3）。推送前请跑 `node tools/check-private-pages.js`。
+
+---
+
+## 0.33 第三十三轮速览（2026-10-07）：**撤掉手记页**，访客名册升为独立大页
+
+用户指示：「手记不推送，给他撤了，还有就是 IP 记录弄个大页放到顶部可切换」。
+
+- **删除**：`docs/journal.html`、`docs/js/journal.js`、`docs/data/journal.json`、
+  `tools/probe-journal.js`（`journal.html` 现返回 404）。CSS 里 `.jr-*` 一整块也清了。
+- **新增 `docs/visits.html` + `docs/js/visits.js`**，成为**导航第 05 项「訪客 / Visitors」**
+  （`header.js` 的 `PAGES` 末项）。原 `journal` 的第 05 位由它接替，序号不变。
+- **版式从"某页中的一段"升为"一个页面"**：
+  - 顶部 `.vs-status` 状态条——SERVER / ONLINE / PRECISION / VISITS 四格读数 + 刷新/自动按钮；
+  - `.vs-key` 高德 Key 行（输入框 + 保存 + 自检），粘贴即验证即生效；
+  - 下面才是名册本体。全部走 `--shell`（1080px，与 board 页同宽，列多不挤）。
+  - 新增 CSS：`--vs-stat-*`、`.vs-actions`、`.vs-key`、`.vs-act`；≤720px 隐藏网络/页面列。
+- **`visits.js` 关键设计**：
+  - 拿不到本地 API 时**不显示名册**，只显示一句"名册只在站长电脑上"（`visit_gate`）——
+    访客打开线上站永远看不到任何人的 IP。
+  - `visibilitychange` 时停掉自动刷新轮询，别在看不见的标签页上耗电。
+  - Key 保存走 `api/geo-key`，被拒时把服务端的中文提示原样 `alert` 出来。
+- **i18n**：删 `journal_*`（title/en/empty），新增 33 个 `visit_*` 键，
+  `title_journal`→`title_visitors`、`nav_journal`→`nav_visitors`。**三语 243×3 一致**。
+- **注意**：属性翻译机制是 **`data-i18n-ph`**（另有 `data-i18n-aria`），**没有 `data-i18n-attr`**——
+  别再臆造（我第一版写错，探针前就改掉了）。
+- **`probe-visits.js` 里的 `/journal.html` 已换成 `/visits.html`**（它拿测试页当触发器用）。
+- **桌面 `kstage-preview.html` 08 节保留为"快捷视图"**，顶部加了一行指路到
+  `http://Koyome.me/visits.html`，并注明"改逻辑请改站点那份"——避免两套 UI 各自漂移。
+- **新增 `tools/probe-visits-page.js` 28/28**：导航可达且高亮、四格读数已填（不是 "—"）、
+  精度档位对人话、Key 输入框是真的 INPUT、计数与行数一致、**en/zh/zhcn 三语标题与标签**、
+  390px 无横向溢出且 Key 框仍可用、console 干净。
+- 回归：test-static / audit-i18n(243×3) / audit-links / probe-visits(18) /
+  probe-visit-online(13) / probe-visits-page(28) / probe-ip-page(15) / probe-amap(36) 全绿。
+- **未提交、未推送**（§4.3）。
 
 ---
 

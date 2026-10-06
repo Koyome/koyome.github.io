@@ -21,3 +21,24 @@ tools/sb-key.txt
 # the visitor roll — real addresses of real people, local only.
 # it must never reach the public site (docs/ is what Pages publishes).
 docs/data/visits.json
+
+# ---- OWNER-ONLY PAGES: never publish these ----
+# docs/ IS the GitHub Pages root, so anything left in it goes online.
+# The visitor roll lists real people's IPs and locations: it is strictly
+# a local page. Ignored here rather than deleted so you keep working on
+# it; the file stays on disk and the local server still serves it.
+# (journal.html was removed for the same reason — see AI-HANDOVER §0.33.)
+docs/visits.html
+docs/js/visits.js
+# only styles the page above — no reason to ship it
+docs/css/visits.css
+
+# If you ever add another local-only page, put it here too. The check is
+# simple: does the page show anyone's IP, address, or visit history?
+
+# the retired journal — kept locally as an archive of what was written,
+# but its page and data must not sit in the published tree either.
+tools/_archive/
+
+# guard rail: `node tools/check-private-pages.js` must print SAFE TO PUSH
+# before any commit. It catches the cases .gitignore does not (git add -f).

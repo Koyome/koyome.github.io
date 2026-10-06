@@ -8,16 +8,24 @@
 (function () {
   'use strict';
 
+  /* PAGES are the public menu — everything here gets published to
+     GitHub Pages, so nothing owner-only may appear in this list.
+     The visitor roll lives in docs/visits.html, which is gitignored
+     (it lists real people's IPs): it is injected at runtime by
+     maybeRevealVisits() below, and only ever on the machine running
+     server.js. A visitor on the public site never sees the link, and
+     following it would 404 anyway. */
   const PAGES = [
     { key: 'home', href: 'index.html', label: 'nav_home' },
     { key: 'catalog', href: 'catalog.html', label: 'nav_catalog' },
     { key: 'hobbies', href: 'hobbies.html', label: 'nav_hobbies' },
     { key: 'guestbook', href: 'guestbook.html', label: 'nav_guestbook' },
-    { key: 'journal', href: 'journal.html', label: 'nav_journal' },
   ];
   /* admin entry is owner-only — injected later by maybeRevealAdmin()
      once the API check proves this is the management machine */
   const ADMIN_PAGE = { key: 'admin', href: 'admin.html', label: 'nav_admin' };
+  /* same treatment: local-only page, never in the published menu */
+  const VISITS_PAGE = { key: 'visits', href: 'visits.html', label: 'nav_visitors' };
 
   const host = document.getElementById('siteHeader');
   if (!host) return;
@@ -142,10 +150,13 @@
     window.I18N.bind();
   }
 
-  /* ---------- owner-only admin entry ----------
+  /* ---------- owner-only entries ----------
      data.js loads after this script, so poll briefly for Koyome,
-     then ask the API: only the management machine gets the link. */
-  (async function maybeRevealAdmin() {
+     then ask the API: only the management machine gets these links.
+     Neither page is published, so neither may appear in the static
+     markup above — on the public site this loop finds no API and
+     adds nothing. */
+  (async function revealOwnerPages() {
     const panel = document.getElementById('menuPanel');
     if (!panel) return;
     let K = window.Koyome;
@@ -157,12 +168,23 @@
     let owner = false;
     try { owner = await K.apiAvailable(); } catch (_) { owner = false; }
     if (!owner) return;
-    const a = document.createElement('a');
-    a.href = ADMIN_PAGE.href;
-    a.dataset.page = ADMIN_PAGE.key;
-    if (ADMIN_PAGE.key === current) a.className = 'active';
-    a.innerHTML = `<span class="no">${String(PAGES.length + 1).padStart(2, '0')}</span><span data-i18n="${ADMIN_PAGE.label}">${ADMIN_PAGE.key}</span>`;
-    panel.appendChild(a);
+
+    /* the visitor roll leads — it is the page you actually come here
+       for — then the management page, each numbered from where the
+       published list stopped */
+    const add = (page, no) => {
+      const a = document.createElement('a');
+      a.href = page.href;
+      a.dataset.page = page.key;
+      a.dataset.ownerOnly = '1';
+      if (page.key === current) a.className = 'active';
+      a.innerHTML = `<span class="no">${String(no).padStart(2, '0')}</span>` +
+        `<span data-i18n="${page.label}">${page.key}</span>`;
+      panel.appendChild(a);
+    };
+    add(VISITS_PAGE, PAGES.length + 1);
+    add(ADMIN_PAGE, PAGES.length + 2);
+
     if (window.I18N) window.I18N.applyStatic();
   })();
 })();

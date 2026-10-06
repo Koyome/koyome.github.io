@@ -29,7 +29,7 @@ function ok(cond, label, extra) {
 const docsDir = path.join(TMP, 'docs');
 fs.mkdirSync(path.join(docsDir, 'data'), { recursive: true });
 fs.writeFileSync(path.join(docsDir, 'index.html'), '<!doctype html><title>t</title>');
-fs.writeFileSync(path.join(docsDir, 'journal.html'), '<!doctype html><title>j</title>');
+fs.writeFileSync(path.join(docsDir, 'visits.html'), '<!doctype html><title>j</title>');
 
 let src = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 /* the single test-only patch: let the probe choose the visitor address */
@@ -99,7 +99,7 @@ const visitPage = async (ip, page = '/index.html', ua = UA) => {
       (row.district ? '' : '   (no district in the data for this address)'));
 
     /* ---- 3. the same visitor inside the merge window folds into one row ---- */
-    await visitPage('114.114.114.114', '/journal.html');
+    await visitPage('114.114.114.114', '/visits.html');
     list = await visits();
     ok(list.length === 1, 'repeat visit does not create a second row', 'rows=' + list.length);
     ok(list[0] && list[0].count === 2, 'counter went up', list[0] && list[0].count);
