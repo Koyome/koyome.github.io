@@ -1,0 +1,8 @@
+=== run Wed Oct 07 2026 15:29:28 GMT+0800 ===
+AE 25.0x53
+project cleared
+looking for C:\Users\—Ó¿§\WorkBuddy\2026-09-19-19-30-28\koyome\docs\assets\rem\portrait.png
+portrait found, 77KB
+FAIL: importFile returned nothing
+ERROR: importFile returned nothing
+  at line 44
