@@ -5,10 +5,11 @@
   "taglineZh": "歡迎——就把這裡當成自己的家。",
   "intro": "Koyome here — this is my own small corner of the internet.\n\nIf you are interested in learning about my life, my feelings, and my thoughts, I have put them all here. The items here are not yet complete, and I will do my best to optimize and improve them. If there are any inconveniences, please accept my apologies. \n\nHave a look around — stay as long as you like.",
   "introZh": "我是 Koyome，這裡是我在網路上的一小塊地。\n\n如果您有興趣了解，關於我的生活我的感受我的想法，我都放在這裡了。這裡的東西都還沒完成，我會盡力優化和改善，如有不便請多見諒（左上角切换语言）。\n\n隨便逛吧——想待多久都可以。",
-  "figNote": "",
-  "figNoteZh": "",
   "armNote": "",
   "armNoteZh": "你观测世界，我观测你\n无限远点的牵牛星",
   "orreryView": "3.125,-0.809,4.142",
-  "avatar": "assets/avatar_cutout.webp"
+  "avatar": "assets/avatar_cutout.webp",
+  "figNote": "",
+  "figNoteZh": "",
+  "homeAvatar": "assets/avatar_cutout.webp"
 }

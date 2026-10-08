@@ -40,8 +40,13 @@ for (const f of htmls) {
 /* ---------- CSS url() ---------- */
 const cssDir = path.join(PUB, 'css');
 for (const f of fs.readdirSync(cssDir)) {
-  const t = fs.readFileSync(path.join(cssDir, f), 'utf8');
+  let t = fs.readFileSync(path.join(cssDir, f), 'utf8');
   let m;
+  /* An inline SVG carried in a data: URI has its own url(#id) filter
+     references, and those are not assets. Blank the data: payload
+     first so the scan below only ever sees real paths. */
+  t = t.replace(/url\(\s*(['"]?)data:[\s\S]*?\1\s*\)/gi, '');
+  t = t.replace(/(['"]?)data:[a-z0-9+\-\/.]+;/gi, '$1inline;');
   const re = /url\(\s*'?([^')]+)'?\s*\)/g;
   while ((m = re.exec(t))) {
     const v = m[1];

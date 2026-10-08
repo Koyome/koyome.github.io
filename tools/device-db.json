@@ -1,0 +1,39 @@
+{
+  "_readme": [
+    "机型库：server.js 在启动时读取本文件，并把它合并到内置表【之前】，所以新增机型只需改这里，不用动代码。",
+    "models：二元组数组 [机型代码前缀, 机型名]，按前缀匹配（SM-S918B / -U / -N 都属于同一台 Galaxy S23 Ultra）。",
+    "brands：二元组数组 [正则源码字符串, 品牌名]，用于按机型代码推断品牌；写法错误的正则会被安全丢弃。",
+    "更新来源建议：GSMArena / 各厂商官网的机型代号表，或本站点访问记录里出现频率高的未识别代码。",
+    "注意：宁可少写也不要写错——写错的机型名比留着原始代码更糟。"
+  ],
+  "models": [
+    ["SM-S937", "Galaxy S25 Edge"],
+    ["SM-A166", "Galaxy A16"],
+    ["SM-A266", "Galaxy A26"],
+    ["SM-A366", "Galaxy A36"],
+    ["SM-A566", "Galaxy A56"],
+    ["SM-X710", "Galaxy Tab S9"],
+    ["SM-X810", "Galaxy Tab S9+"],
+    ["SM-X910", "Galaxy Tab S9 Ultra"],
+    ["SM-X820", "Galaxy Tab S10+"],
+    ["SM-X920", "Galaxy Tab S10 Ultra"],
+    ["Pixel 9 Pro XL", "Pixel 9 Pro XL"],
+    ["Pixel 9 Pro", "Pixel 9 Pro"],
+    ["Pixel 9", "Pixel 9"],
+    ["Pixel 8 Pro", "Pixel 8 Pro"],
+    ["Pixel 8a", "Pixel 8a"],
+    ["Pixel 8", "Pixel 8"],
+    ["Pixel 7a", "Pixel 7a"],
+    ["Pixel 7 Pro", "Pixel 7 Pro"],
+    ["Pixel 7", "Pixel 7"],
+    ["23021PN5EG", "POCO F5 Pro"],
+    ["23013RK75C", "Redmi Note 12 Pro 5G"],
+    ["22041216UC", "Xiaomi Pad 5 Pro"]
+  ],
+  "brands": [
+    ["^SM-", "三星"],
+    ["^Pixel", "Google"],
+    ["^23013RK", "Redmi"],
+    ["^23021PN", "POCO"]
+  ]
+}

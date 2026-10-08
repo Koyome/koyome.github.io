@@ -72,7 +72,12 @@
     document.getElementById('homeTagline').textContent = tagline;
     document.getElementById('homeIntro').innerHTML = paragraphs(intro);
 
-    if (profile.avatar) {
+    /* The homepage portrait is its OWN field now: profile.homeAvatar.
+       It must not read profile.avatar directly — the visitor gate used
+       to write that field, so changing the door repainted the whole
+       homepage. homeAvatar is only ever set by the homepage upload. */
+    const homeAvatar = profile.homeAvatar || profile.avatar;
+    if (homeAvatar) {
       const img = document.getElementById('portraitImg');
       /* theme-aware: assigning src blindly here clobbers the dark variant
          that header.js' swapCutouts() just installed (dark-mode page load
@@ -80,15 +85,15 @@
          Keep data-light-src in sync, and only keep the dark swap when the
          baked *_dark variant actually pairs with this avatar — a custom
          owner upload has no baked variant, so the swap is dropped. */
-      const derivedDark = profile.avatar.replace(/(\.\w+)$/, '_dark$1');
+      const derivedDark = homeAvatar.replace(/(\.\w+)$/, '_dark$1');
       if (img.dataset.darkSrc && img.dataset.darkSrc !== derivedDark) {
         img.removeAttribute('data-dark-src');
         delete img.dataset.darkSrc;
       }
-      img.dataset.lightSrc = profile.avatar;
+      img.dataset.lightSrc = homeAvatar;
       img.src = (document.documentElement.dataset.theme === 'dark' && img.dataset.darkSrc)
         ? img.dataset.darkSrc
-        : profile.avatar;
+        : homeAvatar;
       img.alt = name;
     }
 

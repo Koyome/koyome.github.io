@@ -59,6 +59,62 @@
     </form>
   </section>
 
+  <!-- ============ Visitor Gate ============ -->
+  <section class="admin-wrap" hidden>
+    <div class="section-head">
+      <span class="zh" data-i18n="admin_gate_title">访客页门禁</span>
+      <span class="en" data-i18n="admin_gate_en">LOCK</span>
+    </div>
+
+    <div class="admin-note" data-i18n="admin_gate_note"></div>
+
+    <style>
+      .gate-ava { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+      .gate-ava img {
+        width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+        border: 1px solid rgba(0,0,0,.12); background: #f4f0f6;
+      }
+      .gate-ava-note { font-size: 12px; opacity: .75; line-height: 1.5; }
+    </style>
+
+    <form id="gateForm">
+      <div class="form-grid">
+        <div class="field">
+          <label for="gPassword" data-i18n="admin_gate_pw">GATE PASSWORD</label>
+          <input type="text" id="gPassword" data-i18n-ph="admin_gate_pw_ph" placeholder="blank = gate off" />
+        </div>
+        <div class="field full">
+          <label for="gWelcome" data-i18n="admin_gate_welcome">WELCOME LINES</label>
+          <textarea id="gWelcome" data-i18n-ph="admin_gate_welcome_ph" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn" data-i18n="admin_gate_save">SAVE GATE</button>
+        <span class="form-msg" id="gateMsg"></span>
+      </div>
+    </form>
+
+    <!-- the door's portrait is its own upload on purpose: changing it
+         must not touch the password, and must not touch the homepage
+         portrait (profile.json) either. -->
+    <form id="gateAvatarForm">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="gAvatar" data-i18n="admin_gate_avatar">GATE AVATAR</label>
+          <input type="file" id="gAvatar" accept="image/*" />
+          <div class="gate-ava">
+            <img id="gAvatarPreview" src="assets/avatar.jpg" alt="gate avatar" />
+            <span class="gate-ava-note" data-i18n="admin_gate_avatar_note"></span>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn" data-i18n="admin_gate_avatar_save">UPLOAD AVATAR</button>
+        <span class="form-msg" id="gateAvatarMsg"></span>
+      </div>
+    </form>
+  </section>
+
   <!-- ============ Content library ============ -->
   <section class="admin-wrap" hidden>
     <div class="section-head">
@@ -152,12 +208,12 @@
     <span data-i18n="footer">© 2026 KOYOME. ALL RIGHTS RESERVED.</span> &nbsp;·&nbsp; <span class="addr">KOYOME.ME</span>
   </footer>
 
-  <script src="js/i18n.js?v=202610070642"></script>
+  <script src="js/i18n.js?v=202610091645"></script>
   <script src="js/header.js?v=202610070642"></script>
   <script src="js/data.js?v=202610070642"></script>
   <script src="js/gb-config.js?v=202610070642"></script>
-  <script src="js/visit-beacon.js?v=202610070642"></script>
+  <script src="js/visit-beacon.js?v=202610090445"></script>
   <script src="js/deco.js?v=202610070642"></script>
-  <script src="js/admin.js?v=202610070642"></script>
+  <script src="js/admin.js?v=202610082110"></script>
 </body>
 </html>

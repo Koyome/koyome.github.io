@@ -18,21 +18,52 @@
    Exit 0 = safe to push. Exit 1 = something private is staged.
    ============================================================ */
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 /* Every path that must never appear in a commit. Keep this list and
    .gitignore in step — this file is the one that gets checked. */
 const FORBIDDEN = [
+  /* the visitor log — real addresses of real people */
   'docs/visits.html',
   'docs/js/visits.js',
+  /* the theatre around the roll (code rain, wire, scope, event log) —
+     only visits.html loads it, same owner-only rule */
+  'docs/js/visits-fx.js',
   'docs/css/visits.css',
   'docs/data/visits.json',
+  'docs/data/visits-hidden.json',
+  'docs/data/geo-cache.json',
+  /* the retired journal */
   'docs/journal.html',
   'docs/js/journal.js',
   'docs/data/journal.json',
+  /* Rem — owner-only, and the portrait is not ours to redistribute.
+     puppet.js and mood.js were missing from this list while being
+     referenced only by rem.html: .gitignore was in step but the guard
+     was not, which is the one combination this file exists to catch. */
+  'docs/rem.html',
+  'docs/js/rem.js',
+  'docs/js/puppet.js',
+  'docs/js/mood.js',
+  'docs/js/kurisu-lines.js',
+  'docs/js/kurisu-pool.js',
+  'docs/js/kurisu-voice.js',
+  'docs/js/steinsgate-kb.js',
+  'docs/css/rem.css',
+  /* the runtime those load — only rem.html asks for it, and it is
+     third-party code we are not redistributing */
+  'docs/vendor/live2d/live2d.min.js',
+  'docs/vendor/live2d/live2dcubismcore.min.js',
+  'docs/vendor/live2d/pixi.min.js',
+  'docs/vendor/live2d/index.min.js',
 ];
 
 /* also flag these anywhere in the tree, whatever their path */
-const FORBIDDEN_BASENAMES = ['visits.json', 'sb-key.txt', 'geo-key.txt'];
+const FORBIDDEN_BASENAMES = [
+  'visits.json', 'visits-hidden.json', 'geo-cache.json',
+  'sb-key.txt', 'geo-key.txt',
+];
 
 function git(args) {
   try {
@@ -79,14 +110,20 @@ all.forEach((f) => {
   }
 });
 
-/* --- 4. and the reassuring part --- */
-const ignored = (git('check-ignore docs/visits.html docs/js/visits.js docs/css/visits.css docs/data/visits.json') || '')
+/* --- 4. and the reassuring part ---
+   Only paths that actually exist are counted: the retired journal's
+   three files are gone, and `git check-ignore` reports nothing for a
+   path that is not there — so counting them turned a clean result
+   into "15/18 looks fine", which is exactly the kind of number that
+   teaches a reader to stop reading it. */
+const present = FORBIDDEN.filter((f) => fs.existsSync(path.join(__dirname, '..', f)));
+const ignored = (git('check-ignore ' + present.join(' ')) || '')
   .split('\n').filter(Boolean).length;
-const present = tracked.filter((f) => FORBIDDEN.includes(f)).length;
 
 if (bad === 0) {
   console.log('ok   no owner-only page is tracked or staged');
-  console.log('ok   ' + ignored + '/4 private files are .gitignore’d (local copies kept)');
+  console.log('ok   ' + ignored + '/' + present.length +
+    ' private paths on disk are .gitignore’d (local copies kept)');
   console.log('ok   next commit publishes ' + staged.filter((f) => !/^docs\/data\/visits/.test(f)).length + ' file(s)');
   console.log('\nSAFE TO PUSH — the public site will not contain any visitor record.');
 } else {

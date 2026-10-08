@@ -101,6 +101,108 @@
     }
   });
 
+  /* ================= Visitor Gate =================
+     Lets the owner set the password + welcome lines in front of the
+     visitor log. The password is stored server-side only (see
+     /api/gate) — nothing here is written into a browser-readable
+     static file. A blank password turns the gate off. */
+  (function gateAdmin() {
+    const form = document.getElementById('gateForm');
+    if (!form) return;
+    const pw = document.getElementById('gPassword');
+    const wel = document.getElementById('gWelcome');
+    const msg = document.getElementById('gateMsg');
+    /* the face on the door — picked here, uploaded with the form */
+    const avaInput = document.getElementById('gAvatar');
+    const avaPreview = document.getElementById('gAvatarPreview');
+    let gateAvatarData = null; /* a freshly picked image, as a dataURL */
+
+    if (avaInput) {
+      avaInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          gateAvatarData = await readAsDataURL(file);
+          if (avaPreview) avaPreview.src = gateAvatarData;
+        } catch {
+          msg.textContent = t('msg_read_fail');
+        }
+      });
+    }
+
+    if (apiAvailable()) {
+      fetch('api/gate', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((g) => {
+          if (g && g.welcome && g.welcome.length) wel.value = g.welcome.join('\n');
+          if (g && g.avatar && avaPreview) avaPreview.src = g.avatar;
+        })
+        .catch(() => {});
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = t('msg_saving') || 'saving…';
+      const payload = {
+        password: pw.value,
+        welcome: wel.value.split('\n').map((s) => s.trim()).filter(Boolean),
+      };
+      try {
+        if (await apiAvailable()) {
+          const r = await fetch('api/gate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const j = await r.json();
+          msg.textContent = (j && j.locked)
+            ? '✓ ' + t('admin_gate_status_on')
+            : '✓ ' + t('admin_gate_status_off');
+        } else {
+          msg.textContent = t('admin_gate_noserver');
+        }
+      } catch (err) {
+        msg.textContent = '✕ ' + err.message;
+      }
+    });
+
+    /* the portrait is uploaded on its own: this request carries ONLY the
+       image, so it can never blank the password by accident (an empty
+       password box in the form above means "gate off"), and the server
+       keeps the picture in the gate's own field, never profile.json. */
+    const avaForm = document.getElementById('gateAvatarForm');
+    const avaMsg = document.getElementById('gateAvatarMsg');
+    if (avaForm) {
+      avaForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!gateAvatarData) {
+          avaMsg.textContent = t('admin_gate_avatar_pick');
+          return;
+        }
+        avaMsg.textContent = t('msg_saving') || 'saving…';
+        try {
+          if (await apiAvailable()) {
+            const r = await fetch('api/gate', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ avatarFile: gateAvatarData }),
+            });
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error || 'upload failed');
+            if (j && j.avatar && avaPreview) avaPreview.src = j.avatar;
+            avaMsg.textContent = '✓ ' + t('admin_gate_avatar_done');
+          } else {
+            avaMsg.textContent = t('admin_gate_noserver');
+          }
+          gateAvatarData = null;
+          if (avaInput) avaInput.value = '';
+        } catch (err) {
+          avaMsg.textContent = '✕ ' + err.message;
+        }
+      });
+    }
+  })();
+
   /* ================= 2. Library ================= */
   $('adminNote').innerHTML = t('admin_note');
 

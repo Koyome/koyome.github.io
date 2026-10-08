@@ -26,6 +26,10 @@
   const ADMIN_PAGE = { key: 'admin', href: 'admin.html', label: 'nav_admin' };
   /* same treatment: local-only page, never in the published menu */
   const VISITS_PAGE = { key: 'visits', href: 'visits.html', label: 'nav_visitors' };
+  /* and Rem — local only as well. Both are owner surfaces: one lists
+     who has been here, the other is a conversation that never left the
+     machine. Neither belongs in a published navigation. */
+  const REM_PAGE = { key: 'rem', href: 'rem.html', label: 'nav_rem' };
 
   const host = document.getElementById('siteHeader');
   if (!host) return;
@@ -183,7 +187,8 @@
       panel.appendChild(a);
     };
     add(VISITS_PAGE, PAGES.length + 1);
-    add(ADMIN_PAGE, PAGES.length + 2);
+    add(REM_PAGE, PAGES.length + 2);
+    add(ADMIN_PAGE, PAGES.length + 3);
 
     if (window.I18N) window.I18N.applyStatic();
   })();

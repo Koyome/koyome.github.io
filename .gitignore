@@ -21,6 +21,12 @@ tools/sb-key.txt
 # the visitor roll — real addresses of real people, local only.
 # it must never reach the public site (docs/ is what Pages publishes).
 docs/data/visits.json
+# cloud rows dismissed from the local page (ids only; the rows themselves
+# stay in the shared table — see server.js DELETE /api/visits)
+docs/data/visits-hidden.json
+# resolved places, keyed by the address they belong to (see geoLookup).
+# same rule as the roll: real addresses of real people, local only.
+docs/data/geo-cache.json
 
 # ---- OWNER-ONLY PAGES: never publish these ----
 # docs/ IS the GitHub Pages root, so anything left in it goes online.
@@ -30,8 +36,33 @@ docs/data/visits.json
 # (journal.html was removed for the same reason — see AI-HANDOVER §0.33.)
 docs/visits.html
 docs/js/visits.js
+# the theatre around the roll — code rain, wire, scope, event log.
+# only visits.html loads it; same owner-only rule as everything above.
+docs/js/visits-fx.js
 # only styles the page above — no reason to ship it
 docs/css/visits.css
+
+# the cute login gate's password + owner welcome lines. Lives at the repo
+# ROOT (outside docs/), never shipped to the browser, and never published.
+# It holds the gate password, so it must never reach GitHub — keep it local.
+server-gate.json
+
+# ---- Rem: the local conversation ----
+# Same rule as the visitor roll: it runs on this machine only, and the
+# portrait is a character illustration that is not ours to redistribute.
+docs/rem.html
+docs/js/rem.js
+docs/js/puppet.js
+docs/js/mood.js
+docs/js/kurisu-lines.js
+docs/js/kurisu-pool.js
+docs/js/kurisu-voice.js
+docs/js/steinsgate-kb.js
+docs/css/rem.css
+docs/assets/rem/
+# the Live2D / PIXI runtime those four files above load. Only rem.html
+# asks for it, and it is third-party code we are not redistributing.
+docs/vendor/live2d/
 
 # If you ever add another local-only page, put it here too. The check is
 # simple: does the page show anyone's IP, address, or visit history?

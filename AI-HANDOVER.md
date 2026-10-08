@@ -1,10 +1,767 @@
 # Koyome.me — 项目交接文档（AI Handover）
 
 > 写给下一个接管本项目的 AI（或人类开发者）：**读完这一份，即拥有继续开发的全部上下文。**
-> 最后更新：2026-10-07（第三十四轮：访客页/手记页三层防推送 + 名册视觉重做；第三十三轮：撤掉手记页，访客名册升为独立大页 `visits.html`；第三十二轮：线上信标 + Key 管理；第三十一轮：日志页 + 访客 IP 记录；第三十轮：全站排版 token 化）
+> 最后更新：2026-10-09（第四十四轮：iPhone 系统版本真因修复（UA 两个版本令牌取较大者）+ 「访客名片」
+> ——屏幕反推 iPhone 机型、Client Hints 分 Win10/11 与 Android 真机型、时区/网络/回访/停留/阅读深度；
+> 第四十三轮：设备/UA/归属地探测重写——机型库外置 + 五步降级链 + `tools/probe-ua.js` 225 断言；第四十二轮：门禁视觉重做——分层柔和渐变背景 + 纸纹质感、角色形象"门脚同伴"陪衬、门禁层级抬到页头之上；第四十一轮：访客页"可爱门禁"登录页——**取代进入动画**，头像在上/密码框在下，验证通过前全屏模糊不可读，密码服务端校验（`server-gate.json`，绝不进 `docs/`）+ 随机温馨欢迎语 + 后台可设；第四十轮：访客控制台"减重 + 加辣"——板面由雾光改剃刀边/收紧间距、朋克特效频率翻倍、新增黑客指令台 `TERM` 与扫描扫掠；第三十九轮：名册自动判读意图与来源 + 设备列改为显示真机型；第三十八轮：代码雨可玩化——指针力场/点击冲击波/打字回声/整行锁定 + 四种雨幕模式 + 画布铺满修复 + 胶片颗粒；第三十七轮：访客控制台"大胆化"——代码雨/数据流/流量示波/系统日志/开机自检/超频模式等黑客风格特效；第三十六轮：访问记录零漏记 + 赛博朋克界面重做；第三十五轮：名册可自由移除；第三十四轮：访客页/手记页三层防推送 + 名册视觉重做；第三十三轮：撤掉手记页，访客名册升为独立大页 `visits.html`；第三十二轮：线上信标 + Key 管理；第三十一轮：日志页 + 访客 IP 记录；第三十轮：全站排版 token 化）
+> 🖱️ **重启本机服务**：双击桌面 `Koyome-Restart-Site.vbs`（源码 `restart-server.vbs`）。
+> 改了 `server.js` 之后必须点一次，否则跑的还是旧代码。详见 §0.39 末尾。
 > 🔒 **推送前必读 §0.34**：`docs/` 就是 Pages 发布根，访客页与手记页绝不能上线。
 > 守卫命令 `node tools/check-private-pages.js`，必须打印 SAFE TO PUSH。
 > 仓库状态：本地 HEAD = `4e8dc46`，**远端 main 与之相同**（09-26 20:37 用户一键推送，R20–R24 已上线）｜ ⚠️ 常驻推送授权**已于 2026-09-23 取消**：AI 推送前必须逐次征得用户同意（§4.3）
+
+---
+
+## 0.44 第四十四轮速览（2026-10-09）：iPhone 系统探测纠错 + 「访客名片」
+
+用户原话：「主要是对 iPhone 的系统探测不够呀，我 26.5 系统测试结果显示不对。还有能不能开动你的脑筋做一个
+能知道访客更多信息的功能。」
+
+一句话：**UA 里有两个互相打架的版本号，旧 parser 读了被冻结的那个；以及 UA 只说设备「自称」是什么，
+名片记的是浏览器量出来的事实——屏幕、时区、网络、回访次数、读了多深。**
+
+### 一、iPhone 系统显示不对——真因（有证据，不是推测）
+从线上表把用户那台 iPhone 的真实 UA 捞出来：
+
+```
+Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15
+(KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1
+```
+
+**两个版本声明互相矛盾**：`CPU iPhone OS 18_7`（OS 令牌）vs `Version/26.5`（Safari 自己的版本）。
+- 过去的代码只读 OS 令牌 → 输出 `iOS 18.7`，**而且和同一行的 `Safari 26.5` 自相矛盾**。
+- Safari 的版本号跟随系统、且永远不会超前于系统 → **真值是两者中较大的那个**。
+
+修法（`server.js` 的 `UA_OS` 苹果分支）：取 `OS (\d+)[_.](\d+)` 与 `Version\/(\d+)\.(\d+)` 中**较大**者。
+判据写成注释：两个令牌都可能滞后，但都不会超前。现在这条 UA 读作 `iOS 26.5 / Safari 26.5`，一致了。
+
+### 二、顺带修掉的同类问题：桌面模式的 iPad
+iPadOS 开「请求桌面网站」时 UA 自称 `Macintosh ... Mac OS X 10_15_7`（冻结令牌）。
+`applyFacts()` 里加了一条：**声称是 Mac、但屏幕物理分辨率命中 iPad 面板 → 判为平板**，
+系统写成 `iPadOS <Version 令牌>`。**真 Mac 的屏幕不会命中 iPad 面板**，所以不会误判（两条断言守着）。
+
+### 三、「访客名片」（新功能）——UA 之外的那一半
+设计原则：**UA 是设备「自称」，名片是浏览器「量出来」的事实**；量不到就整组不画，绝不编。
+
+| 来源 | 拿到什么 | 为什么比 UA 强 |
+|---|---|---|
+| `screen × devicePixelRatio` | 物理分辨率 → **具体 iPhone/iPad 机型** | 苹果早就不把机型写进 UA，这是唯一办法 |
+| Chromium Client Hints | **Android 真机型**、真实 `platformVersion`、完整浏览器版本 | Win 10/11 在 UA 里都报 `NT 10.0`，只有它能分开 |
+| `navigator` | CPU 核数、内存、时区、语言 | — |
+| `matchMedia` | 深/浅色、是否减弱动效 | 隐私偏好，也是排版依据 |
+| `navigator.connection` | 4G/3G、RTT、下行带宽 | 判断"卡不卡" |
+| `localStorage` | 第 N 次来访、首次来访日期 | 认得出回头客 |
+| `sessionStorage` | 会话 id → 本次看了几页、持续多久 | 一个 id 串起一次来访 |
+| `pagehide` | 上一页停留时长、阅读进度 | 行在页面**打开**时写入，所以只能由下一页捎带 |
+
+**落地位置**
+- `server.js`：新增 `APPLE_SCREENS`(22 条) + `appleModel()` + `applyFacts()`；
+  `POST /api/visit/caps`（按 ip+ua 匹配 10 分钟内最新一行，回填）；云端行读 `c.caps` 后同样过一遍；
+  按 `sid` 聚合出「本次来访 N 页 / 时长」。
+- `docs/js/visit-beacon.js`：采集并上报；**先问表有没有 `caps` 列**（`?select=caps&limit=1`，PostgREST 缺列报 400），
+  没有就按原样登记——**一次访问都不会因为缺列而丢**。
+- `docs/js/visits.js` + `docs/css/visits.css`：详情行顶部渲染名片（6 组自适应）。
+- `tools/supabase-visits-caps.sql`（新增）：`alter table ... add column if not exists caps jsonb`。
+  **需要用户在 Supabase 跑一次**，不跑也不出错，只是线上访客没有名片。
+- `i18n.js`：三语各 +24 键（410×3）。
+
+### 四、一个诊断用的小东西
+`/api/visits/status` 现在多返回一个 `build`（server.js 的 mtime）。**Node 进程跑的是它启动时那份代码**，
+改完不重启就是旧的——这类"我改了但没变"的来回在这个项目里最贵。比对 `build` 与磁盘 mtime 一秒就能定论。
+（本次就是用它确认：线上进程仍是旧代码，所以用户看到的 iOS 18.7 是旧 parser 干的。）
+
+### 五、验证（2026-10-09 实跑，全绿）
+- `probe-ua.js`：24 组 UA / **271 条断言**（新增 iOS 26.5 冲突用例 ×2、屏幕识别 7 例、横竖屏一致、
+  Client Hints 4 例、桌面模式 iPad + 真 Mac 各 1 例）→ 全通过，9.9µs/次。
+- `probe-visits.js` 51 → **56**（新增名片端到端 5 条：iPhone 由屏幕命名、面板保留、访客本地时间、
+  不篡改浏览器、Client Hints 分出 Win 11）。
+- `probe-visits-page.js` 115 ✓、`probe-visit-online.js` 15 ✓、`audit-i18n.js` NO ISSUES ✓、
+  `check-private-pages.js` **SAFE TO PUSH** ✓。
+- 截图自检：`shot-visits.js` 的样本里加了一条带完整名片的行，桌面/手机两版都看过，排版没问题。
+
+### 六、诚实边界
+- 两代共用一块屏的（iPhone 15/16）**一起命名**，拆开是猜；iOS 开了「显示缩放」会让逻辑分辨率变化 → 匹配不上就留空。
+- 「上一页停留」是上一页的真实测量值，**不是**当前页；会话时长是「首↔末次页面加载」的下限，标了"≥"的含义。
+- 停留/阅读进度只在浏览器上报后才有；云端需要跑一次 SQL 才有列名片。
+
+---
+
+## 0.43 第四十三轮速览（2026-10-09）：设备/UA/归属地探测重写——"手机型号不准"的根因与修法
+
+用户原话：「在项目的 IP 记录功能中，设备探测结果里的手机型号不准。请定位 IP 记录相关的设备/UA 探测代码，
+分析型号识别不准确的原因…并优化探测逻辑，使所有探测字段尽可能精准：设备品牌与型号、操作系统及版本、浏览器
+及版本、IP 归属地与运营商等。要求：使用可靠且可持续更新的识别数据源，为无法精确识别的情况补充逐级降级策略，
+避免为提升准确率引入过重依赖或明显性能损耗；保持字段结构与现有存储兼容，并说明每个字段的判定依据及准确度
+预期，附上一组典型设备 UA 用于验证改动效果。」
+
+一句话：**不是"多写几条正则"能解决的——重写了 `uaInfo()`，加了品牌/型号/OS/浏览器四张表 + 一条可外部更新的
+机型库 + 五步降级链，并把每个字段拆成结构化子字段；零新依赖，单次解析 ~10µs。**
+
+### 一、探测代码在哪
+全部在 `server.js`：
+- `uaInfo(ua)`（约 L463）— 唯一入口，一次访问调一次，结果写进 `recordVisit()` 的行。
+- 表：`UA_APPS`（APP 内置壳）、`UA_OS`（系统）、`UA_BROWSERS`（浏览器）、`MODEL_DB`（机型名映射）、
+  `BRAND_BY_CODE`（由机型代码推品牌）、`BRAND_BY_UA`（由 UA 自报品牌）、`WIN_NT`（Windows NT 版本→产品名）。
+- 归属地：`geoLookup(ip)` + `normIsp()` / `normCountry()` / `PLAUSIBLE_PLACE` / `NOT_A_DISTRICT`。
+- **可外部更新的机型库**：`tools/device-db.json`（新增），启动时读入，合并到内置表**之前**。
+
+### 二、型号不准的四条根因（都是读旧代码读出来的，不是猜的）
+1. **机型库只覆盖三星、且停在 S25 之前**：`GALAXY` 表只有 SM- 一家，小米/华为/荣耀/OPPO/vivo 一个没有，
+   于是这些机器全部落到"原始代码"甚至"未知"。
+2. **品牌前缀表有碰撞**：`LE` 同时归给一加和联想；裸 `V` 太宽，会吞掉运营商串。
+3. **判定依据单一**：只认 UA 里"自报的品牌词"，而小米/华为的 UA **根本不含品牌词**（只有 `23127PN0CG` 这种
+   代码），于是品牌直接空着——这是"型号不准"里占比最大的一块。
+4. **版本串没归一**：`126.0.6478.126` 原样输出，看着像乱码。
+
+### 三、改了什么
+| 项 | 改法 |
+|---|---|
+| `normVer()` | 新版号归一：4 段且第 3 段是"构建号（≥3 位）"→只留主版本（`126.0.6478.126`→`126`）；4 段但第 3 段是真小版本→留 3 段（微信 `8.0.49.2600`→`8.0.49`）；末尾 0 一律去掉（`26.0`→`26`）。 |
+| `WIN_NT` | NT 6.1/6.2/6.3/10.0 → Windows 7/8/8.1/**10/11**（10 与 11 在 UA 里无法区分，标签就写两个，不猜）。 |
+| `UA_OS` | 改为返回 `{name, ver}`；iPad 报 **iPadOS**（不再冒用 iOS）；新增 Windows Phone；鸿蒙→`鸿蒙`。 |
+| `UA_BROWSERS` | 改为返回 `[name, version]`；新增 360/猎豹/傲游/2345/LBBROWSER/世界之窗/Yandex/Vivaldi/Whale/Brave/Opera Touch；OPPO/vivo/华为/小米的壳正名为"XX浏览器"。 |
+| `UA_APPS` | 新增 LINE/Facebook/Instagram/X/Snapchat/Pinterest/哔哩哔哩/京东。 |
+| `MODEL_DB` | 三星家族扩到 S10–S25、Note10/20、Z Flip1–6、Z Fold2–6、A 系列与 Tab S7（前缀匹配：`SM-S918B/-U/-N` 同属 S23 Ultra）。 |
+| **`tools/device-db.json`** | 新增。启动时读入并**插在内置表之前**，所以新增机型改这个文件即可，不用动 `server.js`。文件缺失/写坏 → 静默忽略，页面照常。 |
+| `BRAND_BY_CODE` | 重排消冲突：`V\d/PD\d/PD2\d/V2\d`→vivo（不再裸 `V`）、`LE21`→一加（不再 `LE`）…；末尾保留最宽的"小米码"规则，且修正为 `年月+流水号+字母`（`2201123G`、`23127PN0CG`）——**旧规则 `\d{8}` 漏掉了所有以字母结尾的小米码**。 |
+| `BRAND_BY_UA` | 苹果/Apple 提到最前；补 iQOO/努比亚/红魔/黑鲨/Tecno/Infinix/Itel/Nothing 等。 |
+| `androidModel()` | 跳过 `HarmonyOS` / `HMSCore`（原来鸿蒙机型会被当成"型号=HarmonyOS"）。 |
+| 平板判定 | 补 `SM-X\d`（Tab S9/S10 不带 Tablet 标记）；型号名含 Pad/Tab/Tablet 时也判平板。 |
+| 归属地 | 新增 `normIsp()`（三大运营商/铁通/教育网/科技网/广电/长城/阿里云/腾讯云归一，**认不出的原样保留，绝不编造**）、`normCountry()`（HK/MO/TW 一律写作中国香港/中国澳门/中国台湾）；私网 IP 直接短路返回"局域网"；pconline 尾部像运营商的内容归入 `isp` 而不是区县。 |
+
+### 四、每个字段的判定依据与准确度预期
+| 字段 | 判定依据（优先顺序） | 预期准确度 |
+|---|---|---|
+| `device` 设备类型 | iPad/SM-T/SM-X/Tablet/Pad/Tab/MatePad → 平板；Mobile/Android/iPhone/Windows Phone/HarmonyOS → 手机；其余 → 电脑；命中爬虫 → 爬虫 | 高（≈99%） |
+| `brand` 品牌 | ① UA 自报品牌词（厂商自己说的，最可信）② 机型代码前缀（厂商代号命名空间）③ 机型库命名后按代码回推 | 高（安卓 ≈95%，桌面为空属正常） |
+| `modelName` 型号 | ① 机型库前缀命中（三星/Google/小米少数）② UA 直接写出的名字（Pixel 8 Pro、Moto G）③ iOS → iPhone/iPad ④ 安卓 → 原始代码 ⑤ 空 | 三星/Google/苹果 ≈95%；**小米/OPPO/vivo 多为"原始代码"（准但不"好听"）** |
+| `modelCode` 机型代码 | 安卓括号段里 `Android` 之后第一个非 locale/非 wv 的 token | 高（≈97%，桌面/iOS 为空） |
+| `osName` / `osVersion` | UA 的 `Android x`/`iPhone OS x`/`Windows NT x`/`Mac OS X x`/`HarmonyOS`；NT 号再映射产品名 | 系统名 ≈99%；**版本号≈95%**（Win10/11 无法区分，是协议限制） |
+| `browserName` / `browserVersion` | 专用壳 token（微信/QQ/UC/夸克/百度/各厂浏览器/360/猎豹…）→ 再 Edge/Opera/三星/Chrome/Firefox → Safari | 壳名 ≈95%，版本 ≈95%（`Chrome 126` 是故意只留主版本） |
+| `app` | `MicroMessenger`/`aweme`/`Alipay`… → 微信/抖音/支付宝 | 高（≈98%），仅对确实走内置壳的访问 |
+| `place` 归属地 | 高德（有 key）→ ip-api.com → pconline；区县需通过 `PLAUSIBLE_PLACE` 形态校验；私网 → 局域网 | 有 key：省市区 ≈90%；无 key：省/市 ≈85%；国外 ≈80% |
+| `isp` 运营商 | 来源原值经 `normIsp()` 归一；pconline 尾段疑似运营商时补入 | ≈90%（免费源本身不保证） |
+
+**降级链（写得进代码注释里，五步，从最具体到最保守）：**
+1. 机型库能命名的代码 → `SM-S918B → Galaxy S23 Ultra`
+2. UA 自己写出的名字 → `Pixel 8 Pro`
+3. iOS → `iPhone` / `iPad`（苹果在 UA 里只给到这一层，这是上限不是缺陷）
+4. 安卓 → `品牌 + 原始代码`（**宁可留代码也不编一个店名**）
+5. 什么都证明不了 → 只留品牌，或留空
+
+### 五、兼容性与依赖
+- **零新依赖**：不引 `ua-parser-js` 之类（那类库体积大且机型名不如自己维护的表准）。全表约 200 条常量。
+- **存储兼容**：`device/model/os/browser/app/bot` 六个老字段**含义与形状完全不变**；新增
+  `brand/modelName/modelCode/osName/osVersion/browserName/browserVersion` 是**纯追加**，老行缺字段照常渲染。
+- **性能**：实测 **9.8µs/次**（2 万次平均），上限断言 60µs。每次访问只调一次，可忽略。
+- 前端只把搜索与详情行扩到新字段；表格列未改，老数据照样显示。
+
+### 六、验证（2026-10-09 实跑，全绿）
+- 新增 **`tools/probe-ua.js`**：21 组典型 UA × 逐字段断言 + 拼接一致性 + 品牌不重复 + 性能上限 → **225/225 通过**。
+- **典型 UA 就在这个文件里**（三星 S23 Ultra / 小米 14 / 华为鸿蒙 / 荣耀 / OPPO / vivo / iQOO / 一加 / realme /
+  Pixel 8 Pro / iPhone / iPad / Tab S9 / Win11 Edge / macOS Safari / Linux Firefox / 微信×2 / 抖音 / QQ浏览器 /
+  Googlebot），跑 `node tools/probe-ua.js` 即可复现，加 `VERBOSE=1` 可看每条的解析结果。
+- 回归：`probe-visits.js` 51 ✓、`probe-visits-page.js` 115 ✓、`probe-visit-online.js` 15 ✓、
+  `check-private-pages.js` **SAFE TO PUSH** ✓。
+- ⚠️ 改了 `server.js` → 需双击桌面 `Koyome-Restart-Site.vbs` 重启一次才生效。
+
+### 七、诚实边界（没做的事，不要当已做）
+- 小米/OPPO/vivo 的**代码→店名**映射没有批量内置（厂商不公开稳定的代号表，硬猜会错得更离谱）；
+  想补真名就往 `tools/device-db.json` 里加，格式见文件里的 `_readme`。
+- Windows 10 与 11 在 UA 协议层面无法区分，标签写"Windows 10/11"。
+- 归属地精度取决于是否配了高德 key（`tools/geo-key.txt`），免费源只能到省/市级别。
+
+---
+
+## 0.42 第四十二轮速览（2026-10-08）：门禁视觉重做（背景/质感/角色陪衬）
+
+用户原话：「请优化现有页面的视觉设计…支持用户自定义头像；重新设计页面背景，去除土气感，采用更精致协调的
+配色与质感；将整体风格调整为真正可爱温馨的调性；在页面中增加人物或角色形象的陪衬元素作为装饰，提升场景感
+与亲和力。最后不需要给出图片展示我自己验证。」
+
+一句话：**把"一块扁平淡紫幕布 + 几颗大圆点"换成"有层次、有质感、有角色在场的门厅"。**
+
+### 一、背景重做（去"土气/扁平"）——`docs/css/visits.css`
+- `.vs-login` 底色由**单层径向渐变**改为**分层**：`radial(#fff8f1 顶部奶油光)` + `linear(165deg, #ffeff4 → #f4edfb → #eef4fb)`（奶油→腮红→薰衣草），另加 `inset 0 0 220px rgba(120,92,130,.16)` 暗角造深度。
+- 新增 `.vs-login::before`：四团大范围**模糊色云**（玫瑰/紫罗兰/薄荷/奶油，`filter: blur(30px)`）—— 提供"有呼吸的背景"，不再是死平色。
+- 新增 `.vs-login::after`：内嵌 SVG `feTurbulence` **纸纹**（`opacity:.05; mix-blend-mode:soft-light`）—— 给"质感"，不噪。
+- 旧 5 颗大 bokeh 圆 → **5 颗小星光点**（`vs-sparkle` 闪烁），更精致。
+
+### 二、角色形象陪衬（"门脚同伴"）
+- 新增 `.vs-login-companion`（`#vsLoginCompanion` / `#vsLoginCompanionImg`，`docs/visits.html`）：**复用站长头像**作门脚同伴，
+  浮起 + 轻摆（`vs-companion-float`）+ 落地椭圆投影；`<div class="vs-login-companion">` 里放 `<img>`。
+- `docs/js/visits.js`：新增 `elLoginCompanion/elLoginCompanionImg` 引用；`initGate()` 里 `g.avatar` 同时喂给头像与同伴
+  → **自定义头像一处改、门面与同伴同步**（满足"支持用户自定义头像"）。
+
+### 三、卡片/头像精修
+- 卡片：`rgba(255,255,255,.78)` → `linear(180deg, .94 → .86)` 白面 + `inset 0 1px 0 #fff` 高光 + 暖色投影（`-22px` 大扩散）。
+- 头像：加 `0 0 0 1px rgba(255,180,205,.5)` 淡粉描边环；halo 周期 14s→18s、透明度更柔；卡片宽度 380→392。
+
+### 四、⚠️ 层级修复（真 bug）
+`.vs-login` 原 `z-index: 95` **低于** `.site-header` 的 `z-index: 100`（`style.css` §398）→ 模糊页头会在门禁**上方**露出一条深色横条。
+本轮改为 `.vs-login { z-index: 120 }`、`.vs-welcome { z-index: 121 }`，门禁才真正盖住整页、内容才真正不可读。
+
+### 五、R42 后续补丁（同日，按用户二次反馈）
+
+- **去掉门脚同伴**：用户要求移除角色陪衬。`.vs-login-companion` 的 HTML / CSS / JS 三处删净（reduced-motion 的引用一并删），
+  `.vs-login` 底部 `padding-bottom:168px` 去掉（版式回归居中）。
+- **头像改为"可自行上传"**：`PUT /api/gate` 新增 `avatarFile`（base64 dataURL）→ `saveDataUrl(body.avatarFile,'gate-avatar')` 落盘
+  + 写 `profile.json.avatar`；该端点 `readBody` 上限 **16KB → BODY_LIMIT**（不改则传不上图）。
+  `admin.html` 的 Visitor Gate 区加 `#gAvatar`(file) + `#gAvatarPreview`（圆图预览）+ 内联小样式；`admin.js` 走 选择→预览→上传→回填。
+  i18n 新增 `admin_gate_avatar` / `admin_gate_avatar_note` ×3 语言。
+- **质感再提**：背景加"卡片后方柔光池"、色云 `blur 30→38px`、纸纹 `.05→.07`；卡片改多层阴影（inset 高光 + 顶/底 1px + 三级投影）、
+  圆角 34px；头像三环投影；输入框 1.5px 精边框；按钮加 inset 高光（果冻感）。
+- 版本戳 `visits.css` / `visits.js` / `i18n.js` / `admin.js` → `?v=202610082110`。
+- 验证：`node --check` server/visits/admin/i18n **OK**；**上传端点实测**（`PUT` 带 1×1 PNG → 200 返回 `assets/…_gate-avatar.png`、
+  `GET` 已更新、测后**已还原 `profile.json` 并删测试文件**）；`audit-i18n` **NO ISSUES(376×3)**；`probe-visits-page` **115/115**。
+- ⚠️ **`server.js` 本轮又改了 → 需再双击一次 `Koyome-Restart-Site.vbs`**，否则"上传头像"在线上不生效（旧版 `/api/gate` 不接受 `avatarFile`）。
+
+### 六、R42 第三次补丁（真 bug：改门禁头像连累首页）
+
+**现象**：站长上传门禁头像后，**首页头像也跟着变了**。
+**根因**：`PUT /api/gate` 的 `avatarFile` 走了 `saveProfile()`，写进 `profile.json.avatar`；
+而**首页正是读 `profile.json.avatar`**。两个页面共用同一字段 → 改门即改站。教训：**"门禁头像"与"站点头像"必须是两个字段。**
+
+**修复**：
+1. 门禁头像改用**自己的字段**：`GET /api/gate` 返回 `g.avatar || prof.avatar`（优先门禁自己的，未设则回落站点头像）；
+   `PUT /api/gate` 的 `avatarFile` 只写 `g.avatar`（`server-gate.json`），**不再调 `saveProfile()`**；传 `avatar: ''` 清空、回落到站点头像。
+2. **现场已还原**：`profile.json.avatar` 改回 `assets/avatar_cutout.webp`（首页恢复）；
+   站长上传的 `assets/1791472779570_gate-avatar.jpg` 保留并挂到 `server-gate.json.avatar`（门禁头像不丢）。
+3. **顺带修掉"误清密码"**：头像从 `#gateForm` 拆出为独立表单 `#gateAvatarForm`（只发 `avatarFile`）。
+   原先头像与密码同表单、密码框留空即"关门禁"，站长只想换头像却把密码清空了
+   （现场 `server-gate.json.password` 已被清成空 → **需站长重设门禁密码**）。
+4. i18n 新增 `admin_gate_avatar_save` / `_done` / `_pick` ×3 语言 → **379×3**。
+5. 验证：上传端点实测 **PASS —— `profile.json` 未被改动**（上传前后读盘比对）；测试文件与两份配置已还原/清理；
+   `node --check` 4 文件 OK；`audit-i18n` **NO ISSUES(379×3)**。
+   ⚠️ `server.js` 又改了 → **需再双击一次 `Koyome-Restart-Site.vbs`**；但**首页还原不需要重启**（首页读静态 `profile.json`，刷新即生效）。
+
+### 七、R42 第四次补丁（首页形象字段独立化 —— 彻底修好"改门禁连累首页"）
+
+**再次复现**：站长再换一次门禁头像，首页形象又跟着换了。
+
+**真因（时间线陷阱，不是修复无效）**：上一条补丁的代码是对的，但站长那次上传发生在**重启之前**——旧进程仍在跑旧代码，
+于是又把图写进了 `profile.json`；之后才重启。诊断时 `GET /api/gate` 已正确返回门禁自己的头像（说明**当前进程是新代码**），
+而 `profile.json.avatar` 里躺着一张 `…_gate-avatar.jpg`（旧代码留下的污染）。
+→ 教训：**改完 `server.js` 后，用户没重启就操作，等于修复尚未生效。涉及数据写入的修复，不能只靠"改了代码"，还要考虑旧进程仍在跑的时间窗。**
+
+**彻底修复（两层，不再依赖重启）**：
+1. **字段彻底分离**：首页形象用**自己的字段** `profile.homeAvatar`（`docs/js/main.js` 读 `profile.homeAvatar || profile.avatar`）；
+   门禁头像用 `g.avatar`（`server-gate.json`）。两者从此互不读写。
+   - `POST /api/profile`：`next` 里**必须保留 `homeAvatar: current.homeAvatar`**（否则下一次保存 profile 会把该字段抹掉），
+     且首页上传时 `next.avatar = next.homeAvatar = src`（同步）。
+   - 首页 `main.js` 是**静态 JS**，改完刷新即生效 —— **"改门禁不再影响首页"这件事不需要重启**。
+2. **现场已还原**：`profile.json` 的 `avatar` 与 `homeAvatar` 均回到 `assets/avatar_cutout.webp`（首页形象恢复）；
+   `server-gate.json.avatar` 设为站长最新上传的 `assets/1791473141972_gate-avatar.jpg`（门禁头像不丢）。
+
+**验证**：
+- `[A] 改门禁头像` → `profile.avatar` 与 `homeAvatar` **纹丝不动** → PASS
+- `[B] 改首页形象` → `homeAvatar` **正常更新** → PASS（确认首页仍能正常换形象，没被隔离坏）
+- `probe-visit-online` **15/15**；`check-private-pages` **SAFE TO PUSH**；`node --check` server/main/admin OK；测试文件与两份配置已还原。
+- 版本戳 `js/main.js?v=202610090330`（首页要拿到新的读取逻辑）。
+
+⚠️ 仍需**双击一次 `Koyome-Restart-Site.vbs`**（`server.js` 又改了）：不重启的话，从后台**"首页简介"换首页形象**不会同步 `homeAvatar`。
+但**"改门禁头像不会影响首页"现在就已经生效**了。
+
+---
+
+## 0.41 第四十一轮速览（2026-10-08）：访客页"可爱门禁"登录页（取代进入动画）
+
+用户原话：「为访客页面设计一个风格可爱且具设计感的登录页面，取代当前的进入动画。页面布局为上方展示
+可自定义的站点头像，下方为密码输入框，站长与访客均须输入密码方可进入。在密码验证通过前，页面所有内容
+保持模糊遮罩状态，不可阅读。头像支持站长在后台自由设置与更换。密码输入正确后，解除模糊并随机展示如
+"欢迎主人回家～"等温馨可爱的欢迎语录。整体视觉需注重排版、配色与字体细节，营造柔和治愈的可爱氛围，
+确保交互简洁流畅。」
+
+一句话：**拆掉开机动画，换成一扇粉紫色的软门——验证前全屏起雾，门一开就随机说一句暖心话。**
+
+### 一、门禁页 `#vsLogin`（`docs/visits.html` + `docs/css/visits.css`）
+
+- **旧动画彻底删除**：`<div class="vs-boot" id="vsBoot">` 与 `visits-fx.js` 的 `FX.boot()` 调用一并移除
+  （`probe-visits-page.js` 有断言 `!document.getElementById('vsBoot')` 与"boot splash is skipped"，
+  删元素才能过）。`visits.js` 起手改为 `initGate()`。
+- **布局**：全屏 `.vs-login`（`position:fixed; z-index:95`）→ 白色圆角卡片（30px）→ 顶部 128px 圆形头像
+  （虚线 halo 缓转 + 浮起）→ 站长名 → 副标题 → 药丸密码框（🔒 + `type=password`）→ 粉→紫渐变"进入"按钮
+  → 错误行 + 提示语。背景为粉紫 pastel 径向渐变 + `backdrop-filter` 柔化，另有 5 颗浮动 bokeh 光斑。
+- **锁态**：脚本给 `body` 加 `.is-locked`，对 `.site-header/.vs-wrap/.site-footer/.vs-fx` 施加
+  `filter: blur(16px)`（站点内容**不可读**）+ 前者副 `pointer-events:none`；`filter` 带 `.6s` 过渡，
+  解锁时柔化解雾。字体走 `"Quicksand","Yuanti SC","Hiragino Maru Gothic ProN"` 等圆体。
+- 失败时卡片 `is-shake` 抖动 + 错误文案；`prefers-reduced-motion` 下所有装饰动画与光斑关闭
+  （`visits.css` 的 reduced-motion 段已补 `.vs-login-*`）。
+
+### 二、密码在服务端校验（`server.js`）——绝不下发浏览器
+
+新增三个端点（`/api/gate` 区块，`GATE_FILE = <root>/server-gate.json`）：
+
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/api/gate` | 返回 `{locked, welcome, avatar, name}`（`locked` = 是否设了密码；`avatar/name` 取自 `profile.json`） |
+| POST | `/api/gate/verify` | 收 `{password}`，服务端比较，对 `200 {ok:true}` / 错 `401 {ok:false}` |
+| PUT | `/api/gate` | 设密码（`str` ≤80）与欢迎语（数组 ≤40 条、每条 ≤120，或单串 ≤4000） |
+
+- **密码存储**：`server-gate.json` 在**仓库根**、`docs/` **之外**，且**已加入 `.gitignore`**——它绝不进
+  发布树、绝不进 Git、绝不下发浏览器（浏览器只发它，服务端只答对/错）。文件缺失时回落到默认
+  `{password:'koyome'}`（即默认**开启门禁**）。门禁是"**软**"的：真正保密性在于 `visits.html` 本身永不推送。
+- 默认密码 `koyome` 只是初始占位，站长应在后台改掉。
+
+### 三、随机欢迎语 + 后台设置（`docs/js/visits.js`、`admin.html/js`、`i18n.js`）
+
+- **欢迎语**：解锁后 `showWelcome()` 随机挑一句（站长自定义池优先，否则按当前语言取内置 `WELCOME`
+  的 en/zh/zhcn 各 6 句，如"欢迎主人回家～ 🌸"），底部浮出小药丸、3.8s 后淡出。
+- **后台 "Visitor Gate" 区**（`admin.html` 在 Homepage profile 与 Content library 之间；`admin.js` 的
+  `gateAdmin()`）：设置/清空门禁密码（留空=关门禁）+ 多行欢迎语（每行一条）；`GET` 回填、`PUT` 保存。
+- **头像**沿用既有设施：`profile.json.avatar`（后台 Homepage profile 的 PORTRAIT IMAGE 上传）——门禁与
+  站点用同一张头像，**换头像即在后台更换**，无需新做上传通道。
+- i18n 三语各新增 16 键（`visit_login_*`、`admin_gate_*`）→ en/zh/zhcn 均为 **374**。
+
+### 四、工具链适配
+
+- `tools/probe-visits-page.js`：导航后与 reduced-motion 重载后各加一段"**门禁中和**"（移除 `is-locked`
+  + 隐藏 `#vsLogin/#vsWelcome`），否则断言层被门禁挡住。
+- `tools/shot-visits.js`：非 early 镜头（2–8）导航后同样中和门禁，**镜头 1 保留门禁**（即门禁截图）；
+  另补把 `docs/assets/avatar*.{jpg,webp}` 拷进沙盒，否则截图里头像显示为空白圆环。
+
+### 五、验证（2026-10-08 实跑，全绿）
+
+- 语法：`node --check` server.js / visits.js / i18n.js / admin.js 均 OK
+- `probe-visits-page.js` **115 passed**（含"boot splash is skipped"）；`probe-visits.js` **51 passed**
+- `audit-i18n.js` **NO ISSUES**（374×3）；`check-private-pages.js` **SAFE TO PUSH**
+- 门禁 API 手测：GET locked=true、错密码 401、默认 `koyome` 200、PUT 改密后旧密 401 新密 200 ✓
+- 截图：`tools/_shots-visits/1-boot-splash.png` 即门禁页（头像/密码框/渐变按钮）
+
+⚠️ **两条红线**：① `server-gate.json` 绝不能提交/上传（已 `.gitignore`）；② `visits.html` 仍属
+owner-only、**永不推送**（§0.34 守卫不变）。
+🖱️ **本机服务当前已停 —— 请双击桌面 `Koyome-Restart-Site.vbs` 恢复**（`server.js` 改了必须重启，
+否则 `/api/gate` 仍 404）。⚠️ 本轮 AI 曾按 vbs 逻辑手动重启：停掉了旧进程后，**沙箱内起不了持久进程**
+（§4.2，`Start-Process`/WMI 建进程被环境安全策略拦），故站点暂时是**停的**；双击 vbs 即恢复并加载新门禁代码。
+
+---
+
+## 0.40 第四十轮速览（2026-10-08）：访客控制台"减重 + 加辣" + 黑客指令台
+
+用户原话：「访客页面感觉太厚重了，质感再优化一下 ◤◢ KOYOME//VISITOR-LOG 的朋克特效频率可以再高一点，
+总体的设计感还是欠缺，科技感赛博朋克黑客感全部给我使劲堆料就行了…给我做一个炸裂的视觉效果还有有趣的
+黑客功能出来吧（总体井然有序即可）」
+
+一句话：**把"厚重的雾光灰盒"改成"剃刀边的仪表"，同时把特效频率翻倍，并加了一台真终端。**
+
+### 一、减重（去"厚重"）——`docs/css/visits.css`
+
+**诊断**：`厚重` 不来自内容多，而来自每个板面身上那套**三重阴影**：
+`0 0 0 1px` 描边 + `inset 0 1px 0` + `inset 0 0 34px` 内雾 + `0 0 34px` 外雾。
+六个板面（HUD / 读数 / 控制台 / 名册框 / 闸门 / 示波）各叠一套 → 整页像糊了一层青光。
+
+**做法**：把阴影砍到"一根发丝边 + 一点外辉 + 一条顶边高光"，去掉 34px 的内外雾：
+
+```css
+.vs-hud, .vs-stats, .vs-deck, .vs-scroll, .vs-gate, .vs-scope {
+  box-shadow:
+    0 0 0 1px rgba(34, 224, 255, 0.05),
+    0 1px 0   rgba(34, 224, 255, 0.12),
+    0 0 18px  rgba(34, 224, 255, 0.05);
+}
+```
+
+同时把板间距从 14/18/20px 收到 10/11/16px、`vs-wrap` 内边距 28→22 —— 整页变成一台**紧凑仪表**，不是一摞会发光的盒子。
+
+### 二、加辣（朋克频率翻倍）
+
+| 元素 | 改前 | 改后 |
+|---|---|---|
+| 标题故障 `vs-g1/vs-g2` | 6.4s 一轮、单次爆 | **3.4s 一轮、**每次两爆**（≈ 每 1.7s 抖一次） |
+| 标题常驻 | 只有青光 | 加**洋红/青 RGB 错位** text-shadow（静态就有撕裂感） |
+| 光束 `vs-fx-beam` | 9s / 42vh / 0.10 | **6s** / 46vh / **0.16** |
+| 数据流 `vs-wire-run` | 40s | **26s** |
+| `◤◢` 标记 | 常亮 | 新增闪烁 `vs-mark`（5.5s） |
+| 四种雨幕 fps | 20 / 26 / 34 / 24 | **22 / 30 / 40 / 28** |
+| 雨幕故障率 glitch | .0012 / .004 / .011 / .006 | **.003 / .008 / .020 / .011** |
+| 超频（override） | beam 3.2s、wire 22s、雨 .72 | **2.6s / 16s / .82**，另加标记闪烁加速 |
+
+⚠️ **两条不许动的约束**（`probe-visits-page.js` 写死的）：
+1. 四种雨幕的 **fps 必须互不相同**、**canvas opacity 必须互不相同**（都断言 `Set(size)===4`）→ 现为 .32/.52/.82/.68。
+2. `nextMode` 的遍历顺序 **RAIN→STORM→TRACE→CALM→RAIN** 不许改（断言 `'STORM>TRACE>CALM>RAIN'`）。
+3. `MODES` 的 speed/head/tail 保持原值，否则 `storm 落笔 > calm×1.4` 的断言可能失守。
+
+### 三、新黑客功能
+
+**A. 指令台 `TERM`**（`docs/js/visits-fx.js` 的 `term()` + `docs/js/visits.js` 输入回显 + `visits.html` 面板）
+
+HUD 新增 `TERM` 按钮（`T` 键），点开是一个真终端：`root@koyome:~#` 提示符 + 闪烁光标。
+**所有命令只读真实名册，绝不编造主机/雨幕/结论**：
+
+| 命令 | 作用 |
+|---|---|
+| `help` | 命令表 |
+| `whoami` | 当前身份（owner-only 声明） |
+| `ls` / `hosts` | 列出名册里**每一台**主机（含被视图过滤掉的爬虫/内网）——报的是"机器持有的完整名册" |
+| `scan` | 触发扫描扫掠 + 指纹统计（返回真实行数） |
+| `trace <ip>` | 让雨幕拼出该地址（命中失败会明确说"名册里没有这台"） |
+| `decrypt` | 把页面上所有 IP 逐个从噪声中解出（复用 `decrypt()`） |
+| `field <mode>` | 切雨幕（calm/rain/storm/trace） |
+| `override` | 切换超频 |
+| `date` / `echo` / `clear` / `reset` | 时钟 / 回显 / 清屏 / 复位 |
+
+输出行按 `{t,c}` 上色（青/琥珀/红），提示符 `»`/`~`/`!` 区分级别。
+**身份/位置与名册无关——不读、不猜、不外呼任何威胁情报接口。**
+
+**B. 扫描扫掠 `scan()`**：一条亮线从上往下扫过名册（"读卡"动作）。
+由 `scan` 命令触发，另外每 **60s** 静默自扫一次（`document.hidden` 与 reduced-motion 双重守卫）。
+元素挂在 `.vs-scroll`（`position: relative`）内，绝不自己撑出滚动条。
+
+### 四、i18n / 减动 / 开机自检
+
+- 新增 4 键 ×3 语言：`visit_boot_5`（入侵网格已上膛）、`visit_term`（TERM/终端/終端）、
+  `visit_term_clear`（CLR）、`visit_term_ph`（终端占位符）→ 字典 **358 × 3**。
+- `visit_keys_body` 三语言各加两行：`T` 开终端、控制台 `help` 提示。
+- 开机自检 5 行、行间隔 165→**120ms**（更利落）。
+- reduced-motion 新增屏蔽：`.vs-mark` / `.vs-term-prompt::after` / `.vs-scan` 动画全停
+  （终端是纯文本，不靠动画，照常可用）。
+
+### 五、验证（全绿）
+
+`probe-visits-page` **115/115** ｜ `probe-visits` **51/51** ｜ `probe-visit-online` **15/15** ｜
+`audit-i18n` **NO ISSUES（358×3）** ｜ `audit-links` **NO ISSUES** ｜ `check-private-pages` **SAFE TO PUSH（20/20）**。
+截图工具加了第 7 帧 `7-terminal`（打开指令台跑 `help`→`ls`→`scan` 并自动滚到面板），共 **8 帧**。
+
+---
+
+## 0.39 第三十九轮速览（2026-10-08）：名册自动判读意图与来源 + 设备列修真机型
+
+用户原话：「设备不明，这个得改一下吧，确定的话就直接显示手机型号，不确定就把推测设备写上去」
+以及「以后这样的ip被记录后都要自动解析意图和来源（在这个页面上自动解析）」
+
+### 一、设备列：主位换成真机型
+
+**原来错在哪**：`deviceCell()` 让**类别**（手机/平板/电脑）霸占主位，把**型号**塞进下面一行小字。
+型号才是具体事实，类别是被型号蕴含的——顺序反了。
+
+现在 `deviceHead(v)` 分三种情况：
+1. `v.model` 有值 → **直接显示型号**，按正常字号（`.vs-model`），不标"推测"。
+   型号比"手机"长得多，塞进 9px 大写字距的 chip 会成一片糊，所以真型号走独立样式。
+2. 没有型号但 `v.device` 是有效类别 → 显示类别，**并加"推测"标记**（`.vs-guess`）。
+3. 都没有 → `visit_unknown`，同样标推测。
+
+顺带修了重复显示：型号是 `iPhone` 时，下面那行不再重复 `iPhone`（`.filter(s => s !== head.text)` + 去重）。
+`.vs-dev` 的 `max-width` 从 `22ch` 放宽到 `30ch`，否则「小米 M2102K1C」这种会被截断。
+
+### 二、自动判读：`readVisit(v)` —— 意图 + 来源 + 证据
+
+**放在 `docs/js/visits.js`**（已在防推送清单里），不新增文件。
+
+**两个问题分开答**，因为它们本来就是两件事：
+- **意图 intent**：`HUMAN` / `CRAWLER` / `SCRIPT` / `DATACENTRE` / `UNKNOWN`
+- **来源 source**：搜索引擎 / 社交 App / 站内跳转 / 直接输入 / 外部链接 / 未记录
+
+判定规则（按优先级，全表见代码里的 `CRAWLERS` / `SCRIPTS` / `HOSTING` / `RESIDENTIAL`）：
+
+| 优先级 | 判据 | 结论 | 置信 |
+|---|---|---|---|
+| 1 | UA 自报爬虫品牌（Googlebot/Bingbot/Baiduspider/…20 条） | 爬虫 | 确定 |
+| 2 | `v.bot` 已标记 | 爬虫 | 确定 |
+| 3 | UA 是抓取库（headless/Selenium/curl/Python-requests/scanner…） | 程序 | 确定 |
+| 4 | 完全没有 UA | 程序 | 可能 |
+| 5 | ISP 命中机房词表且未命中家宽词表 | 机房 | 可能 |
+| 6 | 有 `model` 或 `app` | 真人 | 确定/可能 |
+| 7 | 仅 ISP 命中家宽/移动词表 | 真人 | 薄弱 |
+
+**每条结论都必须带证据**（`why[]`），证据全部来自记录里真实存在的字段：
+自报的爬虫名、命中的函数库、ISP 字符串、机型、来源页域名、访问页数、
+**按经度推算的当地时间**（`lon/15` 是太阳时近似，不是真实时区，所以标为推算且不单独用于判定）、
+以及「坐标只到城市级」这条精度声明。
+
+**页面必须显示理由**，不能只给结论——一条无法复核的判读只是戴着自信面具的装饰。
+所以 READ 列里徽标是结论，下面的小字是收据。
+
+### 三、诚实边界（写死在代码里）
+
+- **云端行没有来源页**：`visit-beacon.js` 的 payload 只有 id/ip/page/ua/lat/lon/ts，所以 `ref` 恒空。
+  这种情况下**不是**报「直接访问」，而是报「未记录来源」并附证据「线上信标不带来来源页」——
+  把"没数据"说成"没有来源"就是编造。
+- **`UNKNOWN` 永远不会是「确定」**：有专门断言钉住（"an unknown is never called certain"）。
+- **不引入任何外部威胁情报**：全部本地可推导。要查 IP 信誉得另外调第三方，那会把访客 IP 发出去，不做。
+
+### 四、新增断言（`probe-visits-page.js` 108 → **115**）
+
+设备列 6 条（手机主位是机型 / 真机型不标推测 / 桌面行 / 爬虫仍读作爬虫 / 无空设备 / OS 行不重复型号）+
+判读 7 条（手机读作真人 / 带理由 / 爬虫读作爬虫 / 指出是哪个爬虫 / 桌面行也有 / 每行都有结论且都有理由 / 未知不得为确定）。
+
+**踩的坑**：断言里按 `<tr>` 的 `is-phone` 类找行是错的——`is-phone` 只加在单元格内的 chip 上。
+改成**按 IP 文本定位行**（`.vs-ipv`），更稳。另外爬虫默认被筛选隐藏，必须先幂等地
+把 `#vsFBots` 的 `aria-pressed` 打开再断言。
+
+### 五、同时修掉的时区 bug（见 §时区）
+
+`server.js:657` 本地行写 UTC 墙钟、`:806` 云端行写本地时区 → 同页两种时钟混排。
+现改为写入用 `stampOf(iso)`，并在 `mergedVisits()` 里对所有本地行从 `at` 重算，老数据无需改盘。
+`probe-visits` 49 → **51**。
+
+### 六、桌面重启脚本 `restart-server.vbs`
+
+双击桌面 `Koyome-Restart-Site.vbs` 完成「杀旧 → 等其真正退出 → 启动新 → 探活 → 报告」整个循环。
+
+三个必须遵守的设计约束（改这个文件前先读）：
+
+1. **只杀本站进程。** 机器上同时有 4 个 `node.exe`（端口 80 只属于其中一个），无差别 kill 会误杀。
+   匹配命令行同时含 `server.js` **和** `koyome`。
+   ⚠️ **不要用 `koyome-site` 做匹配**：服务有时是从仓库路径启动的，那条路径不含 `koyome-site`，
+   只匹配它会漏掉旧进程 → 新进程 EADDRINUSE 退出、旧的继续跑旧代码 —— 最坏结果。
+2. **必须独立成文件，不要合并进 `start-koyome.vbs`。** 后者被启动目录在登录时调用，
+   给它加"先杀进程"会导致每次开机误杀。
+3. **复用 `FindNode()` 自愈逻辑**（`C:\Users\Public\koyome-node` → `.workbuddy\...\versions` → PATH）。
+   硬编码第一条正是历史上出过事的写法：它是符号链接，node 版本更新后悬空，服务静默起不来。
+
+**诚实性分支**：WMI 列不出进程时不能报"重启成功"（旧进程其实没被杀），
+单独一支报「无法列出进程，旧服务可能仍占着 80 端口」。
+
+**本环境无法执行验证**：PowerShell 被沙箱拦、Bash 调 `cscript`/`wscript` 判为 LOLBin、`wmic` 不存在。
+所以这个脚本是**未经实机运行验证**的，改完必须人工双击确认。
+
+### 七、合规提醒（未处理，留给用户决定）
+
+信标挂在 **6 个已上线页面**上（index/catalog/guestbook/hobbies/entry/admin），
+而全站 **8 个 .html 零隐私告知** → 与 PIPL 第 17 条（告知义务）有缺口。
+另 Supabase 为境外节点，构成个人信息出境。建议补 `privacy.html` + 页脚告知 + 保存期限清理。
+**本轮未做这三件事**，因为会改变公开页面的可见内容，需用户确认后再动。
+
+---
+
+## 0.38 第三十八轮速览（2026-10-08）：代码雨"可玩化" + 质感优化
+
+用户原话：「代码雨还可以再夸张一点功能还是欠缺可玩性，再做一轮质感优化」
+
+### 一、先修了一个隐蔽的几何 bug：雨其实没铺满屏
+
+`.vs-fx > * { position:absolute; inset:0 }` 对普通块级元素有效，但 **`<canvas>` 是替换元素（replaced element）**：
+只给 `inset:0` 不会拉伸它，它按**自身固有尺寸**布局。于是 `#vsRain` 一直只占屏幕左边一条（当时 `clientWidth≈300`，
+`resize()` 只在初始化时按 300 写过一次画布位图，列数就只有 20）。修复：
+
+```css
+.vs-fx-rain { display:block; width:100%; height:100%; ... }
+```
+
+修完列数从 20 涨到 ~95，**雨幕覆盖面积直接翻了近五倍** —— 这一条比后面所有调参都更"夸张"。
+副作用：canvas `height:100%` 在 `resize()` 之后不会再污染固有尺寸，`resize()` 自身即收敛。
+
+### 二、可玩性：雨从"壁纸"变成"玩具"
+
+| 交互 | 实现 | 说明 |
+|---|---|---|
+| **指针力场** | `pointermove` 记 `mx/my/idle`；列与指针距离 <180px 时 `boost = 1 - d/180`，步进乘 `(1+boost*2.4)` 且强制发亮 | 画布上另有一圈 180px 的淡环 + 光标点，`idle` 每帧衰减、约 2.4s 消散 —— 让"力场范围"看得见，而不是只能靠感觉 |
+| **点击冲击波** | `pointerdown` 在**非控件**目标上 → `blast(x,y)`，推入 wave；环每帧 +17px，两条弧（品红/青）绘制，并**重写它扫过的每一列**（`hit` → 2.6× 步进 + 强制 hot） | 命中判定：`abs(abs(x - wv.x) - wv.r) < 20`。显式排除 `button, a, input, label, tr, select, .vs-log, .vs-keys, .vs-boot`，绝不吞掉真实点击 |
+| **打字回声** | `bindKeys` 里 `if (e.key.length === 1) Rain.say(e.key)`；`emit()` 以 50% 概率从 `echo` 队列取字 | 你敲什么，什么就掉进雨里；上限 24 字 |
+| **整行锁定** | `visits.js` 在 `#vsBody` 上挂 `mouseover`（记住 `hovered` id），命中行 → `FX.rainFocus(rows[i].ip)` | 三列开始拼出**那一行的真实地址**；`VSFX.rain.focus` 可读回 |
+| **四种雨幕** | `MODES` 表；HUD 的 `#vsRainBtn`（FIELD）或 `M` 键循环 | `CALM → RAIN → STORM → TRACE`，每种有自己的 fps/speed/hot/word/morph/glitch/skew/fade 与画布 opacity |
+
+`STORM` 走 CSS `body.vs-rain-storm .vs-fx-rain { transform: skewX(-2.6deg) scale(1.09) }` ——
+`skew` 会推出屏幕外，所以 `.vs-fx` 加了 `overflow:hidden`（探针有断言，防止它撑出横向滚动条）。
+`TRACE` 的 `word: 1.000` 意味着**每一列永远在拼名册里的真东西**，是最"读取中"的一档。
+
+### 三、质感
+
+- **胶片颗粒** `.vs-fx-noise`：内联 SVG `feTurbulence` 平铺，`opacity .055` + `mix-blend-mode: overlay`。
+- **名册外框角标** `.vs-frame::before/::after`：两个 L 形机加工角，名册本身仍是矩形（数据窗口不切角）。
+- **开机屏半透明化**：`backdrop-filter: blur(3px)`，雨从自检文字后面透出来。
+- **首行落表 / IP 解密**保持 R37 行为；行 hover 左缘竖条保留。
+
+### 四、这一轮加/改的断言（`probe-visits-page.js` 84 → **102**）
+
+新断言覆盖：默认档位是 `RAIN`、列数 > 60、`FIELD` 四次点击走完 `STORM>TRACE>CALM>RAIN`、HUD 标签跟随、
+只有 STORM 带 `vs-rain-storm`、四种 fps 与 opacity 互不相同、**「画布铺满视口而非一条」**（`clientWidth/Height`
+等于 `documentElement` 的客户区，1425x900）、`M` 键进入 STORM、**数亮点证明 STORM 比 CALM 多画 >1.4 倍**、
+点击背景入队脉冲、**点击控件不入队**、打字回声（同 tick 读回）、hover 行 → `rain.focus` 等于该行 IP、
+`.vs-fx-noise` 存在、名册在 `.vs-frame` 内、`.vs-fx` 是 `overflow:hidden`。
+
+两个读数的坑，写在这里免得下次再踩：
+1. **transition 要等。** 四种 opacity 是 `.5s` 过渡的，四连点在同一 tick 里读 computedStyle 只会拿到起始值 —— 现在每次点击后 `sleep(700)`。
+2. **STORM 会 scale。** 量画布尺寸要用 `clientWidth/clientHeight`（布局尺寸），`getBoundingClientRect` 在 STORM 下是 1598x981。
+
+顺带修了 `tools/audit-links.js` 的一个误报：内联 `data:image/svg+xml` 里的 `url(%23n)` 是 SVG 自己的滤镜引用，
+不是资源路径，扫描前先剥掉 data URI 负载。（该条从 R37 起就一直挂着。）
+
+### 五、这一轮同样守住的底线
+
+1. **没有假数据**：`TRACE` 拼的、力场强化的、hover 锁定的，全是名册里真有的 IP / 机型 / 路径。
+2. **`prefers-reduced-motion` 仍然全关**：`REDUCED` 下 canvas `display:none` 且 `start()` 从不绑定；
+   `blast/say/focus` 全是 no-op；新增的力场环也在 `draw()` 里（根本不跑）。
+3. **删除语义一字未改**；`check-private-pages` 仍 `SAFE TO PUSH 19/19`。
+4. **控件点击没被吞**（有断言）。
+
+---
+
+## 0.37 第三十七轮速览（2026-10-08）：访客控制台"大胆化"——特效层 + 黑客风格功能
+
+用户原话：「我觉得设计还可以再大胆一点，更赛博朋克风再科技感一点吧，或者你加一点有意思的小功能体现黑客那种感觉，
+还有可以做黑客那种代码爬虫的动画，反正有意思的功能好玩的都加进去大胆的去做去设计（但也需要井然有序条理清晰流畅运行）」
+
+### 一、新的分层：事实归事实，戏归戏
+
+新增 **`docs/js/visits-fx.js`**（owner-only，与 `visits.js` 同规则）。分工写死：
+
+| 文件 | 负责 |
+|---|---|
+| `server.js` | 事实：谁来了、从哪来、写盘、删/隐 |
+| `docs/js/visits.js` | 拉取、过滤、绘制名册、删除交互、把 `rows` 交给特效层 |
+| `docs/js/visits-fx.js` | 一切"戏"：代码雨、数据流、示波器、系统日志、开机自检、超频、快捷键 |
+| `docs/css/visits.css` | 全部样式（含特效层）；调色板硬写在 `body[data-page="visits"]` |
+
+`visits.js` 里所有对特效层的调用都过一层 **no-op 兜底**（`FX = window.VSFX || {}` + 逐个补空函数），
+所以 `visits-fx.js` 丢失 / 报错时名册照常工作 —— 这是刻意的，特效层不是关键路径。
+
+### 二、六件新的"有意思的功能"（全部基于真实数据，无一条假流量）
+
+| 功能 | 实现 | 关键约束 |
+|---|---|---|
+| **代码雨** `#vsRain` | 一列一帧，26fps，DPR 上限 1.5；每 2–3 秒随机让一列拼出**名册里真实存在的** IP / 机型 / 路径 | `panel` 内 `aria-hidden`；`document.hidden` 停 rAF；`prefers-reduced-motion` 直接 `display:none` 且**从不启动** |
+| **数据流 WIRE** `#vsWire` | HUD 下方走马灯，每条都是名册里的真实行；内容**签名去重**，只在数据变化时重建并重算时长 | 复制一份实现无缝；`resize` 只重算不重建 |
+| **流量示波器** `#vsScope` | canvas，24 个小时桶倒推计数，曲线 + 面积 + 峰值数字 | 仅在数据签名或宽度变化时重绘；DPR 上限 2 |
+| **系统日志 SYSLOG** `#vsLog` | 默认收起；只记**真实发生的事**（就绪/上行恢复/新进 N 条/删除 N 条/隐藏 N 条/还原本机/Key 更新/自检/网关失联） | 上限 60 行 FIFO；徽标显示条数；PURGE 清空 |
+| **开机自检** `#vsBoot` | ~1.4s 逐行打印自检，之后**自我删除节点**；点击 / 任意按键 / `pagehide` 立即结束 | `prefers-reduced-motion` 直接不创建；不可能阻塞任何操作 |
+| **OVERRIDE 超频** | ↑↑↓↓←→←→BA 切换；仅换一组 CSS 变量（整台机器变品红）+ 光束/故障加速 + 顶部 OVERRIDE 标签 | **纯外观**，不改任何记录逻辑；再按一次释放；日志留痕 |
+
+另加：新行落表时整表 `is-arrive` 扫光 + **IP 解密揭示**（`decrypt()`，与真值等长的乱码逐位解析，列宽不跳）；
+行 hover 左缘竖条；`KEYS` 快捷键卡（`/` 过滤、`R` 刷新、`A` 自动、`L` 日志、`ESC` 释放）；
+表头加了贴底霓虹线；面板统一双角机加工斜切（名册 `vs-scroll` 除外，它是数据窗口，保持矩形）。
+
+### 三、这次守住的四条底线
+
+1. **没有假数据。** 数据流重复的是名册里真实存在的 IP（`probe-visits-page` 会断言 wire 里出现 `#vsBody` 首行的地址）；示波器数的是真行；日志记的是真事件。仪器上编数字比不显示更糟。
+2. **`prefers-reduced-motion` 全量关停。** 新清单进 §9；探针新增 5 条断言：雨不启动、流不滚动、闪屏不创建、名册照常、不横向溢出。
+3. **删除语义一字未改。** 本地真删、云端只隐（`docs/data/visits-hidden.json`）、RESTORE 可逆；`removeIds()` 只是多读一次返回体用于写日志。
+4. **防推送清单同步。** `docs/js/visits-fx.js` 同时进 `.gitignore` 与 `tools/check-private-pages.js` 的 `FORBIDDEN`（现 19/19）。
+
+### 四、回归数字（本轮结束时）
+
+`probe-visits` 49/49 ｜ `probe-visits-page` **84/84**（原 66 + 18 条新特效断言）｜ `probe-visit-online` 15/15 ｜
+`audit-i18n` NO ISSUES（315×3）｜ `audit-links` NO ISSUES ｜ `check-private-pages` SAFE TO PUSH 19/19 ｜
+`shot-visits` 出 5 张图（含开机自检、超频+面板、全量、手机）。
+
+i18n 新增键 24 个×3 语言；`tools/shot-visits.js` 现拍 `1-boot-splash / 2-desktop / 3-desktop-override-and-panels / 4-desktop-everything-shown / 5-phone`。
+
+
+## 0.36 第三十六轮速览（2026-10-08）：**访问记录零漏记** + 界面赛博朋克重做
+
+用户原话：「确保每一次外部访问都被无遗漏地实时记录，不能因缓存、去重或采样导致漏记；
+本地及局域网访问一律跳过不写入记录……同时重做该记录模块的界面视觉……
+但请保持数据结构与记录逻辑不变，确保前后端联动正确。」
+
+### 一、四条"漏记"通道，全部堵死（`server.js`）
+
+| 原来的行为 | 为什么是漏记 | 现在 |
+|---|---|---|
+| `VISIT_MERGE_MS = 30min` 合并 | 同一人开 3 页只留 1 行 + 计数。这是**访客**统计，不是**访问**日志 | 删掉。一次请求一行，`count` 恒为 1、`pages` 仍保留（结构不变） |
+| 云端 `limit=200` + `.slice(0,60)` | 只画最新 60 条，其余看不见 = 采样 | 读 1000 条，**不再截断**；渲染只受筛选器影响 |
+| 每请求重新读盘 → push → 写盘 | 两个请求同时进来互相覆盖，**真的丢行** | 内存数组即权威数据，push 不可丢；落盘只是 120ms 防抖镜像 + `process.on('exit')` 冲刷 |
+| 爬虫 UA 直接 `return` | 一次真实请求被静默丢弃 | 照写，标 `bot: true`；界面默认不显示但一键可看 |
+
+- **本地/局域网一律不写**：`recordVisit()` 开头 `if (isPrivateIp(ip)) return;`。
+  注意原来是**写的**（带 `lan:true`），这次才真的跳过；老数据里的 `lan:true` 行仍在盘上，
+  页面用「LAN」筛选器开关（默认关）决定要不要看。
+- **容量上限** `VISIT_MAX` 500 → 20000（只是磁盘保险丝，不是采样规则）。
+- **行 id** 由 `Math.random()` 改为 `now + 递增计数器`——同毫秒 10 个请求也必须 10 个不同 id。
+- **每行新增**：`device / model / os / browser / app / bot / ref / lang`。
+  老行没有这些字段时，`mergedVisits()` 用同一个 `uaInfo()` 从 `ua` 现算，结构向后兼容。
+
+### 二、`uaInfo()`：把 User-Agent 读成人话
+
+在 `isPrivateIp()` 之后，约 200 行。读取顺序固定：**App 壳 → 爬虫 → 设备 → 系统 → 机型 → 浏览器**。
+
+- **App 壳优先**：微信 / 企业微信 / QQ / 支付宝 / 抖音 / 微博 / 百度 / 钉钉 / 飞书 / 淘宝 / 小红书 / 快手 / 知乎。
+  「从哪来的」比「用了什么浏览器」有用。
+- **机型**：Android 能拿到真实机型码（`SM-S918B`、`M2102K1C`、`ELS-AN00`）；
+  **iOS 只能拿到 "iPhone"**——Safari 从不报机型，所以机型写 iPhone、系统带版本号，**不编**。
+- **三星机型码按前缀匹配**：`SM-S918B / SM-S918U / SM-S918N` 是同一台 S23 Ultra 的不同市场版本，
+  精确匹配会一个都认不出（第一版就是这么错的，被探针抓到）。
+- **品牌只按厂商命名空间推断**（`SM-`→三星、`RMX`→realme、`CPH`→OPPO、`ELS/ALN`→华为…），
+  映射不确定的机型码**原样保留**——错的名字比一个编号更糟。
+
+### 三、地理定位：持久缓存 + 后台队列
+
+- `docs/data/geo-cache.json`（**新增，已 gitignore**，里面是真人 IP）：成功缓存 30 天，失败缓存 6 小时。
+  以前只存内存，重启就全冷，最老的行永远查不完。
+- **请求路径里不再有任何网络调用**：命中缓存就用，没命中就丢进队列、行先画空，
+  由 `drainGeo()`（一次 5 个、批间 250ms）慢慢补。这样 1000 条云端记录下页面仍能每 4 秒刷新。
+- 换/清 高德 Key → `regeoAll()`：清缓存 + 抹掉已解析的位置 + 重新排队（老代码只 `GEO.clear()`，已有行不会重解析）。
+- `/api/visits/status` 现在返回 `{cloud, rows, local, bots, today, queue, cached, hidden}`（只增字段）。
+
+### 四、线上信标 `docs/js/visit-beacon.js`
+
+- **删掉 localStorage 半小时节流**。那是一条去重规则，而访问日志上的去重规则就是 bug：
+  同一个人开第二页之后全部丢掉。
+- **IP 来源重排 + 容错**：`api64.ipify.org` → `freeipapi.com` → `ipwho.is` → `jsonip.com`。
+  实测：`api.ipify.org`（只有 IPv4 那个域）**不发 CORS 头**，浏览器用不了；
+  `ipwho.is` 会限流并在 200 里返回 `{success:false}`；`jsonip.com` 在本机被挡。
+  字段名各家不同且会变，所以 `ip/ipAddress/query/address/IPv4` 全找一遍，**限流响应视为失败**。
+- **三级降级注册**（`register()`）：① 带地址 → ② **不带 ip 字段**（让表自己从请求头填，见下）→ ③ `ip:''`。
+  老代码查不到地址就 `return`，**整次访问直接丢**——这是最要命的一处漏记。
+  宁可留一条没地址的行（时间/页面/机型都在），也不能没有。
+- sessionStorage 缓存**地址** 2 分钟（省三次查询），但**从不缓存注册**。
+
+### 五、云端表加固（`tools/supabase-visits.sql`，需用户手动重跑一次）
+
+新增：`visits_client_ip()` 函数 + `alter column ip set default public.visits_client_ip()`
+（从 `request.headers -> x-forwarded-for` 取**真实来源地址**，比浏览器自报更可信）+
+`alter column ip drop not null`（允许"有访问、没地址"的行落地）。
+**这个文件没跑也不影响**：客户端的第 ③ 级降级照样能写进去。
+
+### 六、界面：整页重做成控制台（`visits.html` / `visits.js` / `visits.css` 全量重写）
+
+- **强制夜间**：调色板写在 `body[data-page="visits"]` 上，浅色主题也不翻白（含 header/footer/菜单）。
+- **四层屏幕**：`.vs-fx` = 网格 + CRT 扫描线 + 9 秒一趟的光束 + 暗角，`pointer-events:none`。
+- 霓虹两声道：青 `#22e0ff`（在线/正常）、品红 `#ff3bb0`（选择/删除/云端行）、
+  柠檬 `#9dff4d`（实时）、琥珀 `#ffc24a`（仅站长可见/爬虫）。
+- **发光只表示状态**：`is-up` 由服务器回报的真实状态设置，不是装饰。
+- **微动效**：数字变化闪一下（`is-bump`）、新行滑入（`is-new`）、标题每 6.4 秒一次故障抖动、
+  LIVE 呼吸灯、HUD 时钟。**`prefers-reduced-motion` 下全部停掉**，只留配色和网格。
+- **新增**：HUD 时钟 + LIVE/IDLE、7 格读数（SERVER/ONLINE/PRECISION/RECORDS/24H/ADDR/LOCATED）、
+  DEVICE 列、来源标签（线上/本机）、BOTS 与 LAN 筛选片、搜索框（ip/地点/机型/页面/UA）、
+  点行展开完整记录（UA / 来源页 / 语言 / 行 id / 坐标）。
+- **删除语义一字未改**：本地行真删、云端行只进 `visits-hidden.json`、RESTORE 可还原。
+- **`load()` 修了一个真 bug**：原来 `busy` 时直接 `return`——刚删完的行会因为撞上一次轮询而
+  显示成旧数据。现在改成记 `pending`，当前这次一落地就接着跑。
+
+### 七、验证
+
+- `tools/probe-visits.js` **49/49**（重写）：三次访问 = 三行（无合并）、**25 个并发请求 = 25 行**（无竞态）、
+  25 个 id 互不相同、127/192.168/10/172.16 一律零写入、爬虫照写且带标记、
+  三星/小米/微信/iPad/桌面五组 UA 解析、后台定位落盘、重启不丢、按 id 删 + 清空 + 清空后重启仍为空。
+- `tools/probe-visits-page.js` **66/66**（重写）：筛选器默认藏起爬虫与本机行、三个语言、
+  手机 390px 无横向溢出且行宽合理、设备列/地点/坐标有值、点行展开完整记录、
+  删除只删服务端那一行、云端行 `deleted:0` + 只进隐藏清单 + RESTORE。
+- `tools/probe-visit-online.js` **15/15**（改）：第二页**也要注册**（原来断言的是"不再注册"，正好相反）。
+- `tools/shot-visits.js`（重写）：沙箱 + 12 条仿真名册，出 4 张图（桌面/浅色主题下仍为夜/全展开/手机）。
+- 回归：audit-i18n（287×3，NO ISSUES）/ audit-links（NO ISSUES）/
+  check-private-pages（**SAFE TO PUSH**）/ probe-rem（54，与本次无关）。
+- **⚠️ 未提交、未推送**（§4.3）。**本地服务需要重启一次**才会加载新后端：
+  任务管理器结束 `node.exe` → 双击 `start-hidden.vbs`（`C:\Users\Public\koyome-site` 是本仓库的软链）。
+
+---
+
+## 0.35 第三十五轮速览（2026-10-07）：名册可自由移除（本地真删 / 云端本地隐藏）
+
+用户原话：「云端的数据留在云端，但是本地页面记录云端的要可以删除」。
+**需求我前两次都理解反了**——先做成了"云端不可删"，又改成"云端也真删"。
+正解是第三种：**数据留云端，但本机页面可以把它移除掉**。
+
+- **`docs/data/visits-hidden.json`（新增，已 gitignore）**：本机的"已移除"清单，只存云端行 id。
+  - 页面移除云端行 → id 写进这里，**Supabase 里那条一字不动**。
+  - `mergedVisits()` 在做地理定位**之前**就过滤掉它们（省掉限流额度）。
+  - 可逆：`POST /api/visits/restore` 清空清单；`GET /api/visits/hidden` 查当前数量，
+    页面上有「RESTORE n」按钮（只在有隐藏时出现）。**"能藏起来但找不回来"是陷阱，所以必须能还原。**
+- **本地行（`v…`）仍然真删**：写在 `docs/data/visits.json`，删了就是删了。
+- **`DELETE /api/visits`** 现在支持 `?id=`（可重复）/ `?ids=a,b` / `?all=1` / `?restore=1`，
+  返回 `{ok, deleted, hidden, all, restore}`。**全程不向云端表发任何写请求。**
+- **页面**：每行一个 `×`，另有复选框 + 表头三态全选 + `DELETE SELECTED`（带计数）+ `DELETE ALL`。
+  云端行的 × 提示写明「从本页隐藏（云端副本保留）」，不是含糊的"删除"。
+- **`tools/supabase-visits-harden.sql` 的删除策略维持 `using (false)`**——
+  云端表谁都删不了，包括站长。（中途我误加了一条"owner deletes"，已撤回。）
+- **实测结论（真实 Supabase）**：隐藏前云端 9 条 → 隐藏 c9 → 页面 8 条、**云端仍 9 条** → RESTORE → 页面 9 条。
+- **探针 `probe-visits-page.js` 43/43**（从 28 项扩到 43）：删除是真删（断言了**服务端**持久化，
+  不只是前端消失）、云端行只隐藏不删除且 `deleted:0`、id 落进清单、RESTORE 清空、按钮随之消失。
+  探针跑在**沙箱**（临时目录复制 server.js + 假 `docs/`），真实 `visits.json` 零触碰；
+  沙箱自清理已修（先 kill 服务再删，否则每次留一个 temp 目录）。
+- 回归：test-static / audit-i18n(248×3) / audit-links / probe-visits(18) /
+  probe-visit-online(13) / probe-visits-page(43) / probe-ip-page(15) / probe-amap(36) 全绿。
+  守卫 `check-private-pages.js`：**SAFE TO PUSH**。
+- **未提交、未推送**（§4.3）。
 
 ---
 

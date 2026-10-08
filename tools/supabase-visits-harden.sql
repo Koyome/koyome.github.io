@@ -58,8 +58,9 @@ create policy "visits: owner reads with secret"
     ) = 'iBo8lVV3DR1k1NI8otRfU91zYTtmiERT'
   );
 
-/* 显式声明"不许改、不许删"，万一将来有人手滑加了宽松策略，
-   这一条至少把 UPDATE / DELETE 挡住（配合上面的 revoke 生效） */
+/* 不许改、不许删——站长本人也不删。
+   云端那张表是公开站写入的登记簿，不是本机的名册；页面上"删除"只作用于
+   本机 docs/data/visits.json。云端数据保留是为了让漏删的记录还能追溯。 */
 create policy "visits: nobody updates"
   on public.visits for update to anon
   using (false) with check (false);

@@ -24,6 +24,33 @@ create table if not exists public.visits (
 alter table public.visits add column if not exists lat double precision;
 alter table public.visits add column if not exists lon double precision;
 
+/* ── 地址兜底：让表自己把访客 IP 填进去（强烈建议跑这一段）──
+   为什么需要：访客浏览器要先问第三方服务「我的公网 IP 是多少」，
+   才敢把地址写进来。第三方会挂、会限流、会被墙——只要它没回答，
+   这次访问就只能整条丢掉。
+
+   这里把 ip 的默认值改成从请求头里取。PostgREST 每次插入都会带上
+   真实来源地址，所以哪怕访客浏览器一个地址都查不到，只要它不带
+   ip 字段提交，这一列也会被自动填上真值——而且比浏览器自报的更
+   可信，因为它不是访客说了算。
+
+   重复跑这一整个文件是安全的：下面这些 create or replace 都不会报错。 */
+create or replace function public.visits_client_ip() returns text
+language sql stable as $$
+  select coalesce(
+    nullif(btrim(split_part(
+      coalesce(current_setting('request.headers', true)::json ->> 'x-forwarded-for', ''),
+      ',', 1)), ''),
+    ''
+  );
+$$;
+
+alter table public.visits alter column ip set default public.visits_client_ip();
+
+/* 地址为空的行也必须能写进来——宁可留一条没有地址的记录，
+   也不要因为查不到地址而把整次访问丢掉 */
+alter table public.visits alter column ip drop not null;
+
 create index if not exists visits_ts_idx on public.visits (ts desc);
 
 alter table public.visits enable row level security;

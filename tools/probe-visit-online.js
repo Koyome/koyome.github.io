@@ -124,8 +124,9 @@ fs.rmSync(TMP, { recursive: true, force: true });
     const { sessionId } = await send(ws, 'Target.attachToTarget', { targetId, flatten: true });
     await send(ws, 'Page.enable', {}, sessionId);
     await send(ws, 'Network.enable', {}, sessionId);
-    /* an ordinary phone, not "HeadlessChrome" — the beacon (rightly)
-       ignores crawlers and our own headless probes */
+    /* an ordinary phone, not "HeadlessChrome": nothing here filters on
+       the agent any more, but the registration's own content is part
+       of what this probe reads, so it should be a realistic one */
     await send(ws, 'Network.setUserAgentOverride', {
       userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15' +
         ' (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
@@ -155,11 +156,52 @@ fs.rmSync(TMP, { recursive: true, force: true });
       ok(typeof body.ua === 'string' && body.ua.length > 0, 'and the device that made it');
     }
 
-    /* one registration per half hour, not one per page view */
+    /* ── the guest card rides along in the same registration ────────
+       It is only sent when the shared table actually has a `caps`
+       column to put it in — a registration must never be risked on a
+       column that isn't there. So this asks the table first, exactly
+       the way the beacon does, and only then insists on the card. */
+    const cfg = fs.readFileSync(path.join(__dirname, '..', 'docs', 'js', 'gb-config.js'), 'utf8');
+    const url = (cfg.match(/url:\s*'([^']+)'/) || [])[1];
+    const key = (cfg.match(/anonKey:\s*'([^']+)'/) || [])[1];
+    let hasCaps = false;
+    if (url && key) {
+      try {
+        const probe = await fetch(`${url}/rest/v1/visits?select=caps&limit=1`, {
+          headers: { apikey: key, Authorization: `Bearer ${key}` },
+        });
+        hasCaps = probe.ok;      /* 400 = no such column, 200 = it exists */
+      } catch (_) { /* offline — the card cannot be checked either way */ }
+    }
+    if (hasCaps && reg) {
+      let body = {};
+      try { body = JSON.parse(reg.body); } catch (_) { /* malformed */ }
+      const card = body.caps || {};
+      ok(Object.keys(card).length > 0,
+        'the registration carries the guest card', JSON.stringify(card).slice(0, 140));
+      ok(Number(card.dpr) > 0 && Number(card.sw) > 0,
+        'the card measures the panel — the only way an iPhone can be named',
+        card.sw + '×' + card.sh + ' @' + card.dpr);
+      ok(!!card.sid, 'and knows which visit it belongs to', String(card.sid));
+    } else {
+      console.log('skip the guest card is not sent — the shared table has no caps column yet');
+    }
+
+    /* EVERY page view registers. This used to be one registration per
+       half hour — a de-duplication rule that threw away every page a
+       visitor opened after the first. On a visit log that is a defect,
+       so the assertion is now the opposite of what it was. */
     await send(ws, 'Page.navigate', { url: `http://127.0.0.1:${STATIC_PORT}/catalog.html` }, sessionId);
-    await sleep(3500);
-    const posts = seen.filter((r) => /\/rest\/v1\/visits/.test(r.url) && r.method === 'POST').length;
-    ok(posts === 1, 'a second page view does not register again', 'posts=' + posts);
+    await sleep(4000);
+    const posts = seen.filter((r) => /\/rest\/v1\/visits/.test(r.url) && r.method === 'POST');
+    ok(posts.length === 2, 'a second page view registers as well — nothing is de-duplicated',
+      'posts=' + posts.length);
+    const pages = posts.map((r) => {
+      try { return String(JSON.parse(r.body).page || ''); } catch (_) { return ''; }
+    });
+    ok(pages.some((p) => /catalog\.html/.test(p)), 'and it says which page it was', JSON.stringify(pages));
+    ok(new Set(pages).size === pages.length, 'the two registrations are not copies of one another',
+      JSON.stringify(pages));
 
     ws.close();
   } catch (e) {
