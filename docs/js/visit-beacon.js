@@ -191,12 +191,115 @@
     return out;
   }
 
+  /* ---------- the fun half ----------
+     Everything below is measured or feature-detected on the device
+     itself, and none of it is personal: no name, no account, no precise
+     position, no contacts — only what the screen and the engine can do.
+     Two of them are worth calling out:
+
+       · the refresh rate is MEASURED (frames counted over ~600ms), not
+         read off a claim, so ProMotion really does answer 120;
+       · the core count the browser offers is not trusted on its own —
+         Safari answers 4 for a six-core A17 Pro, so the server corrects
+         it from the chip the identified model ships.
+
+     Anything a browser cannot answer is simply absent. */
+
+  /** frames per second, counted — the only way to know a panel's rate.
+      Not frames ÷ time: one long frame while the page is still loading
+      drags that average down and would report a 120Hz phone as 60. The
+      interval at the 20th percentile is used instead, which is the
+      panel's own speed with the browser's own hiccups ignored. */
+  function refreshRate() {
+    return new Promise(function (resolve) {
+      if (!window.requestAnimationFrame) return resolve(0);
+      var t0 = 0, last = 0, gaps = [], done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        /* fewer than eight frames is not a measurement */
+        if (gaps.length < 8) return resolve(0);
+        gaps.sort(function (a, b) { return a - b; });
+        var v = gaps[Math.floor(gaps.length * 0.2)] || gaps[0];
+        resolve(v > 0 ? Math.round(1000 / v) : 0);
+      }
+      function frame(t) {
+        if (done) return;
+        if (!t0) { t0 = t; last = t; requestAnimationFrame(frame); return; }
+        if (t > last) gaps.push(t - last);
+        last = t;
+        if (t - t0 >= 700) return finish();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      /* a hidden tab never fires a frame, and a page that never draws
+         has no refresh rate to report — both end here with nothing */
+      setTimeout(finish, 1600);
+    }).catch(function () { return 0; });
+  }
+
+  /** what the engine can actually do, asked of the objects themselves */
+  function feats() {
+    var out = [];
+    try { if (navigator.gpu) out.push('WebGPU'); } catch (_) { /* no WebGPU */ }
+    try {
+      var c = document.createElement('canvas');
+      if (c.getContext) {
+        if (c.getContext('webgl2')) out.push('WebGL2');
+        else if (c.getContext('webgl')) out.push('WebGL');
+      }
+    } catch (_) { /* canvas refused (rare, blocked) */ }
+    try {
+      if (typeof WebAssembly === 'object') {
+        out.push('WASM');
+        /* The module below is the smallest one that cannot be built
+           without the v128 type: one function taking nothing and
+           returning v128, whose body is a single v128.const. An engine
+           with SIMD validates it; one without it fails. Verified in
+           node — and the previous version of these bytes was wrong
+           (the code section said 21 bytes where it has 22), so it
+           answered false everywhere and never reported SIMD at all. */
+        var simd = [0, 97, 115, 109, 1, 0, 0, 0,
+          1, 5, 1, 96, 0, 1, 123,          /* type: () -> v128 */
+          3, 2, 1, 0,                       /* one function, that type */
+          10, 22, 1, 20, 0, 253, 12,        /* code: body 20, v128.const */
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          11];
+        if (WebAssembly.validate(new Uint8Array(simd))) out.push('WASM SIMD');
+      }
+    } catch (_) { /* no WebAssembly */ }
+    try { if (typeof OffscreenCanvas === 'function') out.push('OffscreenCanvas'); } catch (_) {}
+    return out;
+  }
+
+  /** how long this page took to show something — about our site, on
+      their machine, and therefore the one performance number worth
+      having */
+  function firstPaint() {
+    try {
+      var e = performance.getEntriesByName
+        ? performance.getEntriesByName('first-contentful-paint') : [];
+      if (e.length && e[0].startTime) return Math.round(e[0].startTime);
+    } catch (_) { /* Paint Timing unavailable */ }
+    return 0;
+  }
+
   function measured() {
     var c = {
       sw: screen.width, sh: screen.height, dpr: window.devicePixelRatio || 1,
       vw: window.innerWidth, vh: window.innerHeight,
       cores: navigator.hardwareConcurrency || 0, mem: navigator.deviceMemory || 0,
+      depth: screen.colorDepth || 0,
     };
+    try {
+      c.gamut = matchMedia('(color-gamut: rec2020)').matches ? 'rec2020'
+        : matchMedia('(color-gamut: p3)').matches ? 'p3' : 'srgb';
+    } catch (_) { /* no media queries for gamut */ }
+    try {
+      c.hdr = matchMedia('(dynamic-range: high)').matches
+        || matchMedia('(video-dynamic-range: high)').matches;
+    } catch (_) { /* no HDR query */ }
+    c.feat = feats();
     try { c.tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || ''; } catch (_) { c.tz = ''; }
     try { c.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (_) {}
     try { c.motion = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduce' : 'no'; } catch (_) {}
@@ -358,6 +461,9 @@
   }
 
   (async function run() {
+    /* the frame counter runs alongside everything else rather than
+       before it — a visit must never be delayed by a measurement */
+    var hzP = refreshRate();
     var caps = await card();
     /* the moment the page goes away is the only moment the time spent
        on it is known, so it is captured whichever way the visit is
@@ -373,6 +479,17 @@
       }
     } catch (_) { /* no data layer — assume the public site */ }
     var info = await publicIp();
+    /* both of these are only knowable now, well after the card was
+       measured: the frame rate has finished counting, and the page has
+       had time to paint */
+    caps.hz = await hzP;
+    caps.fcp = firstPaint();
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        var q = await navigator.storage.estimate();
+        if (q && q.quota) caps.quota = Math.round(q.quota / 1073741824);
+      }
+    } catch (_) { /* no Storage API — the quota is just left out */ }
     /* no address found is not a reason to skip the visit — register()
        knows what to write without one */
     var caps2 = (await capsSupported()) ? caps : null;

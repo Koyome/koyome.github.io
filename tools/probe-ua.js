@@ -4,8 +4,10 @@
    representative UA per device family through uaInfo(), and checks the
    answer field by field. It also times the parser, because a table that
    grew heavy enough to slow a page load would be a bad trade. */
+const fs = require('fs');
 const path = require('path');
-const { uaInfo, normIsp, normCountry, normVer, isPrivateIp, appleModel, applyFacts }
+const { uaInfo, normIsp, normCountry, normVer, isPrivateIp, appleModel, appleCores,
+  applyFacts }
   = require(path.join(__dirname, '..', 'server.js'));
 
 /* Each case: what to expect. Only the fields listed are checked, so a
@@ -230,6 +232,94 @@ for (const [label, fn, want] of GEO) {
   if (got === want) pass++;
   else { fail++; failures.push(`  ✗ ${label}: 期望 "${want}"，实际 "${got}"`); }
 }
+
+/* ---------- core counts ----------
+   navigator.hardwareConcurrency answers 4 on an iPhone 15 Pro Max whose
+   A17 Pro has six cores — deliberate fingerprinting resistance, and
+   useless for describing the machine. Where the family is known the
+   published count is used; where the family spans several chips
+   (iPhone SE/6/7/8 is 2, 4 and 6 cores) nothing is claimed. */
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1';
+const proMax = applyFacts({ ua: IPHONE_UA, osName: 'iOS' },
+  { sw: 430, sh: 932, dpr: 3, cores: 4 });
+if (proMax.cores === 6 && proMax.coresReported === 4 && proMax.coresSrc === 'spec') pass++;
+else {
+  fail++;
+  failures.push(`  ✗ iPhone 15 Pro Max: 期望 6 核（浏览器自报 4），实际 ${proMax.cores}/${proMax.coresReported}`);
+}
+/* a machine we cannot name keeps whatever the browser said */
+const plain = applyFacts({ ua: 'Mozilla/5.0 (X11; Linux x86_64)' }, { sw: 1920, sh: 1080, dpr: 1, cores: 8 });
+if (plain.cores === 8 && !plain.coresReported) pass++;
+else { fail++; failures.push(`  ✗ 未命名机型应保留浏览器上报的核数: ${plain.cores}`); }
+/* a family whose members ship different chips must not be given a number */
+const oldSE = applyFacts({ ua: IPHONE_UA, osName: 'iOS' }, { sw: 375, sh: 667, dpr: 2, cores: 2 });
+if (oldSE.cores === 2 && !oldSE.coresReported && appleCores('iPhone SE / 6 / 7 / 8') === 0) pass++;
+else { fail++; failures.push(`  ✗ 多芯片家族不应编造核数: ${oldSE.cores}`); }
+
+/* ---------- the fun half: measured, not guessed ---------- */
+/* the WASM SIMD byte string that lives in the beacon must really be a
+   valid module. The previous one was not — its code section claimed 21
+   bytes and had 22 — so it answered false on every engine and SIMD was
+   never once detected. This reads the bytes out of the browser file and
+   builds them here, where the answer is known. */
+const beacon = fs.readFileSync(path.join(__dirname, '..', 'docs', 'js', 'visit-beacon.js'), 'utf8');
+const lit = /var simd = \[([\s\S]*?)\];/.exec(beacon);
+if (!lit) { fail++; failures.push('  ✗ 信标里的 WASM SIMD 字节串没找到（检测已丢失？）'); }
+else {
+  const bytes = lit[1]
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')      /* strip the inline notes */
+    .replace(/\/\/[^\n]*/g, ' ')
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x !== '')
+    .map(Number);
+  if (bytes.some((x) => !Number.isInteger(x) || x < 0 || x > 255)) {
+    fail++; failures.push('  ✗ WASM SIMD 字节串里有非法字节');
+  } else if (WebAssembly.validate(new Uint8Array(bytes))) {
+    pass++;
+  } else {
+    fail++; failures.push(`  ✗ 信标里的 WASM SIMD 模块不是合法模块（${bytes.length} 字节）`);
+  }
+}
+
+const FUN = [
+  ['120Hz 面板', { hz: 118 }, 'hz', 120],
+  ['90Hz 面板', { hz: 88 }, 'hz', 90],
+  ['60Hz 面板', { hz: 59 }, 'hz', 60],
+  /* 100 is within 8% of no standard rate, so no rate may be claimed */
+  ['非标准帧率不冒认档位', { hz: 100 }, 'hz', 100],
+  ['色深', { depth: 24 }, 'depth', 24],
+  ['广色域', { gamut: 'p3' }, 'gamut', 'p3'],
+  ['HDR', { hdr: true }, 'hdr', true],
+  ['首屏绘制', { fcp: 312 }, 'fcp', 312],
+  ['存储配额', { quota: 238 }, 'quota', 238],
+];
+for (const [label, caps, field, want] of FUN) {
+  const got = applyFacts({ ua: '' }, caps)[field];
+  if (got === want) pass++;
+  else { fail++; failures.push(`  ✗ ${label} · ${field}: 期望 "${want}"，实际 "${got}"`); }
+}
+/* panel arithmetic: 393×852 @3x is 3.0 megapixels and 2.17:1 */
+const panel = applyFacts({ ua: IPHONE_UA, osName: 'iOS' }, { sw: 393, sh: 852, dpr: 3 });
+if (panel.mp === '3.0' && panel.ratio === '2.17') pass++;
+else { fail++; failures.push(`  ✗ 屏幕算术: ${panel.mp} MP / ${panel.ratio}:1`); }
+/* the raw reading is kept even when a standard rate is named */
+const hzRow = applyFacts({ ua: '' }, { hz: 118 });
+if (hzRow.hz === 120 && hzRow.hzMeasured === 118) pass++;
+else { fail++; failures.push(`  ✗ 刷新率应保留原始读数: ${hzRow.hz}/${hzRow.hzMeasured}`); }
+/* deviceMemory is a floor — the marker must survive */
+const memRow = applyFacts({ ua: '' }, { mem: 8 });
+if (memRow.mem === 8 && memRow.memMin === true) pass++;
+else { fail++; failures.push('  ✗ 内存应标记为下限（≥）'); }
+/* capabilities arrive as a list and are capped, never trusted blindly */
+const eng = applyFacts({ ua: '' }, { feat: ['WebGPU', 'WebGL2', 'WASM', 'x'.repeat(80)] });
+if (Array.isArray(eng.feat) && eng.feat.length === 4 && eng.feat[3].length === 16) pass++;
+else { fail++; failures.push(`  ✗ 能力清单应被截断到 16 字符: ${JSON.stringify(eng.feat)}`); }
+/* and capped, so a hostile payload cannot bloat a row */
+const many = [];
+for (let i = 0; i < 40; i++) many.push('f' + i);
+if (applyFacts({ ua: '' }, { feat: many }).feat.length === 8) pass++;
+else { fail++; failures.push('  ✗ 能力清单应最多 8 项'); }
 
 /* ---------- the guest card: what a screen knows that a UA does not ----------
    Apple stopped naming the handset in the UA, so the only way to say

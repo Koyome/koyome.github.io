@@ -83,9 +83,14 @@ function row(n, o) {
    from its panel, its own timezone, how far down the last page was
    read, and how many times it has been here. */
 const CARD = {
-  screen: '393×852 @3x', vp: '393×659', cores: 6, mem: 8, tz: 'Asia/Shanghai',
-  local: '10-09 04:12', theme: 'dark', motion: 'no', touch: 'touch',
-  net: '4g', rtt: 50, down: 9.2, visits: 7, first: Date.now() - 38 * 86400000,
+  screen: '393×852 @3x', vp: '393×659', mp: '3.0', ratio: '2.17',
+  hz: 120, hzMeasured: 118, depth: 24, gamut: 'p3', hdr: true,
+  /* the browser said four; the A17 Pro has six */
+  cores: 6, coresReported: 4, coresSrc: 'spec', mem: 8, memMin: true,
+  feat: ['WebGPU', 'WebGL2', 'WASM', 'WASM SIMD'], fcp: 312, quota: 238,
+  tz: 'Asia/Shanghai', local: '10-09 04:12', theme: 'dark', motion: 'no',
+  touch: 'touch', net: '4g', rtt: 50, down: 9.2, visits: 7,
+  first: Date.now() - 38 * 86400000,
   sessN: 3, sessMs: 262000, lastDwell: 74000, lastPage: '/index.html', lastScroll: 62,
 };
 const SEED = [

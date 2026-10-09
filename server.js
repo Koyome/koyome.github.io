@@ -631,6 +631,38 @@ const APPLE_SCREENS = [
   [2, 2064, 2752, 'iPad Air 13 / Pro 13 英寸'],
 ];
 
+/* Core counts, from the chip each family ships. This table exists
+   because navigator.hardwareConcurrency LIES on iOS: Safari reports 4
+   on an iPhone 15 Pro Max whose A17 Pro has six cores. It is not a
+   bug — it is deliberate fingerprinting resistance — but it makes the
+   number useless for describing the machine, so where the family is
+   known the published core count is used instead, and what the browser
+   said is kept beside it.
+
+   Only families whose members all ship the same core count are listed.
+   Where they differ (iPhone SE/6/7/8 spans 2, 4 and 6 cores) there is
+   no honest single number, so nothing is claimed. */
+const APPLE_CORES = {
+  'iPhone X / XS / 11 Pro': 6,
+  'iPhone XS Max / 11 Pro Max': 6,
+  'iPhone XR / 11': 6,
+  'iPhone 12 mini / 13 mini': 6,
+  'iPhone 12 / 13 / 14': 6,
+  'iPhone 14 Pro / 15 / 16': 6,
+  'iPhone 12 / 13 Pro Max · 14 Plus': 6,
+  'iPhone 15 Plus / 16 Plus · 15 / 16 Pro Max': 6,
+  'iPhone 16 Pro / 17 / 17 Pro': 6,
+  'iPhone 16 / 17 Pro Max': 6,
+  'iPhone Air': 6,
+  'iPad mini 6 / 7': 6,
+  'iPad Pro 10.5 / Air 3': 6,
+};
+
+/** the published core count for a family we could name, or 0 for "unknown" */
+function appleCores(name) {
+  return (name && APPLE_CORES[name]) || 0;
+}
+
 /** name the Apple handset from its physical panel, or say nothing */
 function appleModel(sw, sh, dpr) {
   const w = Number(sw), h = Number(sh), d = Number(dpr);
@@ -664,6 +696,35 @@ function applyFacts(row, caps) {
   const sw = Number(caps.sw), sh = Number(caps.sh);
   if (sw && sh && dpr) row.screen = sw + '×' + sh + ' @' + dpr + 'x';
   if (Number(caps.vw) > 0 && Number(caps.vh) > 0) row.vp = Number(caps.vw) + '×' + Number(caps.vh);
+  /* two facts worth more than the panel size they come from: how many
+     pixels the screen actually is, and how tall it is relative to its
+     width — both exact, both just arithmetic on what was measured */
+  if (sw && sh && dpr) {
+    row.mp = (Math.round((sw * dpr * sh * dpr) / 1e5) / 10).toFixed(1);
+    row.ratio = (Math.max(sw, sh) / Math.min(sw, sh)).toFixed(2);
+  }
+
+  if (Number(caps.hz) > 0) {
+    /* A measured rate, and it stays measured. Naming a "120Hz panel"
+       from a reading of 95 would be a claim the measurement does not
+       support, so a standard rate is only used when the reading is
+       within 8% of it; otherwise the raw number is shown. Either way
+       the raw reading is kept, because it is the evidence. */
+    const hz = Number(caps.hz);
+    row.hzMeasured = hz;
+    const STD = [30, 60, 90, 120, 144, 165];
+    let near = 0;
+    for (const s of STD) { if (Math.abs(hz - s) / s <= 0.08) near = s; }
+    row.hz = near || hz;
+  }
+  if (Number(caps.depth) > 0) row.depth = Number(caps.depth);
+  if (caps.gamut) row.gamut = String(caps.gamut).slice(0, 10);
+  if (caps.hdr === true || caps.hdr === 'true') row.hdr = true;
+  if (Number(caps.quota) > 0) row.quota = Number(caps.quota);
+  if (Array.isArray(caps.feat)) {
+    row.feat = caps.feat.slice(0, 8).map((x) => str(x, 16)).filter(Boolean);
+  }
+  if (Number(caps.fcp) > 0) row.fcp = Number(caps.fcp);
 
   let named = '';
   if (/iPhone|iPad|iPod/i.test(row.ua || '')) named = appleModel(sw, sh, dpr);
@@ -716,8 +777,26 @@ function applyFacts(row, caps) {
   if (ch.arch) row.arch = String(ch.arch).slice(0, 16);
   if (ch.bit) row.bit = String(ch.bit).slice(0, 8);
 
-  if (Number(caps.cores) > 0) row.cores = Number(caps.cores);
-  if (Number(caps.mem) > 0) row.mem = Number(caps.mem);
+  /* Cores: the browser's own number is the starting point, but iOS
+     under-reports it on purpose (an A17 Pro answers 4 for its six
+     cores), so where the handset has been named the published count
+     replaces it — and what the browser actually said is kept alongside,
+     because the gap between the two is itself the interesting fact. */
+  const reported = Number(caps.cores) > 0 ? Number(caps.cores) : 0;
+  const bySpec = appleCores(row.modelName || '');
+  row.cores = Math.max(reported, bySpec) || 0;
+  if (row.cores && reported && reported !== row.cores) {
+    row.coresReported = reported;
+    row.coresSrc = 'spec';
+  } else if (row.cores) {
+    row.coresSrc = 'measured';
+  }
+  /* navigator.deviceMemory is Chromium-only, rounded DOWN to a power of
+     two and capped at 8 for fingerprinting resistance — so it is a
+     floor, never a figure. Showing "8 GB" as though it were the amount
+     would be wrong on a 32GB machine; "≥ 8 GB" is exactly right, and
+     that marker is carried in memMin so the page cannot lose it. */
+  if (Number(caps.mem) > 0) { row.mem = Number(caps.mem); row.memMin = true; }
   if (caps.tz) row.tz = String(caps.tz).slice(0, 48);
   if (caps.theme) row.theme = String(caps.theme).slice(0, 8);
   if (caps.motion) row.motion = String(caps.motion).slice(0, 12);
@@ -2026,5 +2105,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  uaInfo, normIsp, normCountry, normVer, isPrivateIp, appleModel, applyFacts,
+  uaInfo, normIsp, normCountry, normVer, isPrivateIp, appleModel, appleCores,
+  applyFacts,
 };
