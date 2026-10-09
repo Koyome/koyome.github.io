@@ -256,6 +256,18 @@ const oldSE = applyFacts({ ua: IPHONE_UA, osName: 'iOS' }, { sw: 375, sh: 667, d
 if (oldSE.cores === 2 && !oldSE.coresReported && appleCores('iPhone SE / 6 / 7 / 8') === 0) pass++;
 else { fail++; failures.push(`  ✗ 多芯片家族不应编造核数: ${oldSE.cores}`); }
 
+/* ---------- which build of the probe wrote this card ----------
+   A card missing half its fields is nearly always a browser running a
+   cached copy of the old script, not a device that cannot answer, so
+   the version is carried on the row and the page prints it. */
+const stamped = applyFacts({ ua: '' }, { bv: '20261009b', cores: 4 });
+if (stamped.bv === '20261009b') pass++;
+else { fail++; failures.push(`  ✗ 探针版本应写入行内: ${stamped.bv}`); }
+/* a card written before the probe carried a version has none, and must
+   not be given one — the absence is the signal */
+if (!('bv' in applyFacts({ ua: '' }, { cores: 4 }))) pass++;
+else { fail++; failures.push('  ✗ 无版本号的旧卡片不应被补上版本号'); }
+
 /* ---------- the fun half: measured, not guessed ---------- */
 /* the WASM SIMD byte string that lives in the beacon must really be a
    valid module. The previous one was not — its code section claimed 21
@@ -327,8 +339,10 @@ else { fail++; failures.push('  ✗ 能力清单应最多 8 项'); }
    sharing one panel are named together — splitting them would be a
    guess — and a resolution nothing matches returns nothing at all. */
 const SCREENS = [
-  ['iPhone 15 / 16', 393, 852, 3, 'iPhone 14 Pro / 15 / 16'],
-  ['iPhone 16 Pro Max', 440, 956, 3, 'iPhone 16 / 17 Pro Max'],
+  ['iPhone 15 / 16', 393, 852, 3, 'iPhone 14 Pro / 15 / 15 Pro / 16'],
+  ['iPhone 16 Pro Max', 440, 956, 3, 'iPhone 16 Pro Max / 17 Pro Max'],
+  ['iPhone 15 Pro Max', 430, 932, 3, 'iPhone 15 Plus / 15 Pro Max / 16 Plus'],
+  ['iPhone 7 Plus', 414, 736, 3, 'iPhone 7 / 8 Plus'],
   ['iPhone SE', 375, 667, 2, 'iPhone SE / 6 / 7 / 8'],
   ['iPad Pro 11', 1194, 834, 2, 'iPad Pro 11 英寸'],
   ['iPad Pro 12.9', 1366, 1024, 2, 'iPad Pro 12.9 英寸'],
@@ -385,7 +399,7 @@ else { fail++; failures.push(`  ✗ 真 Mac 不该被认成平板: ${realMac.mod
    blank card with one */
 const merged = applyFacts({ ua: 'Mozilla/5.0 (iPhone) AppleWebKit', osName: 'iOS' },
   { sw: 393, sh: 852, dpr: 3, ch: { model: 'nonsense' } });
-if (merged.model === '苹果 iPhone 14 Pro / 15 / 16') pass++;
+if (merged.model === '苹果 iPhone 14 Pro / 15 / 15 Pro / 16') pass++;
 else { fail++; failures.push(`  ✗ 屏幕识别应优先于 hints: "${merged.model}"`); }
 if (applyFacts({ ua: '' }, null).model === undefined) pass++;
 else { fail++; failures.push('  ✗ 没有测量数据时不应凭空造字段'); }

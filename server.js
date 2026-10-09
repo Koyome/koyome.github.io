@@ -608,17 +608,25 @@ function uaInfo(ua) {
    Entries are [dpr, short side, long side, name], physical pixels. */
 const APPLE_SCREENS = [
   [2, 750, 1334, 'iPhone SE / 6 / 7 / 8'],
-  [3, 1080, 1920, 'iPhone 7 / 8 Plus'],
+  /* 414×736 @3x — the Plus of that era. It used to be listed as
+     1080×1920, which at 3x is a 360×640 panel: no iPhone has ever had
+     one, so a real 7/8 Plus never matched and the entry could only ever
+     mislabel something else. */
+  [3, 1242, 2208, 'iPhone 7 / 8 Plus'],
   [3, 1125, 2436, 'iPhone X / XS / 11 Pro'],
   [3, 1242, 2688, 'iPhone XS Max / 11 Pro Max'],
   [2, 828, 1792, 'iPhone XR / 11'],
   [3, 1080, 2340, 'iPhone 12 mini / 13 mini'],
-  [3, 1170, 2532, 'iPhone 12 / 13 / 14'],
-  [3, 1179, 2556, 'iPhone 14 Pro / 15 / 16'],
-  [3, 1284, 2778, 'iPhone 12 / 13 Pro Max · 14 Plus'],
-  [3, 1290, 2796, 'iPhone 15 Plus / 16 Plus · 15 / 16 Pro Max'],
+  /* 390×844 — the plain and the Pro of a generation shared one panel,
+     so both are named; dropping either would be a guess. */
+  [3, 1170, 2532, 'iPhone 12 / 12 Pro / 13 / 13 Pro / 14'],
+  [3, 1179, 2556, 'iPhone 14 Pro / 15 / 15 Pro / 16'],
+  [3, 1284, 2778, 'iPhone 12 Pro Max / 13 Pro Max / 14 Plus'],
+  /* 430×932 — the entry used to say "16 Pro Max" as well, but that
+     phone is 440×956 and has its own entry below. */
+  [3, 1290, 2796, 'iPhone 15 Plus / 15 Pro Max / 16 Plus'],
   [3, 1206, 2622, 'iPhone 16 Pro / 17 / 17 Pro'],
-  [3, 1320, 2868, 'iPhone 16 / 17 Pro Max'],
+  [3, 1320, 2868, 'iPhone 16 Pro Max / 17 Pro Max'],
   [3, 1260, 2736, 'iPhone Air'],
   [2, 1488, 2266, 'iPad mini 6 / 7'],
   [2, 1536, 2048, 'iPad 9.7 英寸 / Air 1·2 / mini 2–5'],
@@ -643,16 +651,17 @@ const APPLE_SCREENS = [
    Where they differ (iPhone SE/6/7/8 spans 2, 4 and 6 cores) there is
    no honest single number, so nothing is claimed. */
 const APPLE_CORES = {
+  'iPhone 7 / 8 Plus': 4,          /* A10 Fusion is a quad-core part */
   'iPhone X / XS / 11 Pro': 6,
   'iPhone XS Max / 11 Pro Max': 6,
   'iPhone XR / 11': 6,
   'iPhone 12 mini / 13 mini': 6,
-  'iPhone 12 / 13 / 14': 6,
-  'iPhone 14 Pro / 15 / 16': 6,
-  'iPhone 12 / 13 Pro Max · 14 Plus': 6,
-  'iPhone 15 Plus / 16 Plus · 15 / 16 Pro Max': 6,
+  'iPhone 12 / 12 Pro / 13 / 13 Pro / 14': 6,
+  'iPhone 14 Pro / 15 / 15 Pro / 16': 6,
+  'iPhone 12 Pro Max / 13 Pro Max / 14 Plus': 6,
+  'iPhone 15 Plus / 15 Pro Max / 16 Plus': 6,
   'iPhone 16 Pro / 17 / 17 Pro': 6,
-  'iPhone 16 / 17 Pro Max': 6,
+  'iPhone 16 Pro Max / 17 Pro Max': 6,
   'iPhone Air': 6,
   'iPad mini 6 / 7': 6,
   'iPad Pro 10.5 / Air 3': 6,
@@ -691,6 +700,12 @@ function appleModel(sw, sh, dpr) {
    Anything still unknown is left blank, never invented. */
 function applyFacts(row, caps) {
   if (!row || !caps || typeof caps !== 'object') return row;
+
+  /* Which build of the beacon wrote this card. Kept on the row so a
+     card that is missing half its fields can be told apart from a
+     browser that simply cannot answer — the first is our cache problem,
+     the second is the device. */
+  if (caps.bv) row.bv = String(caps.bv).slice(0, 24);
 
   const dpr = Number(caps.dpr);
   const sw = Number(caps.sw), sh = Number(caps.sh);

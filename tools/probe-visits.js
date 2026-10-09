@@ -246,7 +246,7 @@ const post = async (p, body, ua, ip) => {
     list = await visits();
 
     const carded = pick('203.0.113.11');
-    ok(/iPhone 14 Pro \/ 15 \/ 16/.test(carded.model || ''),
+    ok(/iPhone 14 Pro \/ 15 \/ 15 Pro \/ 16/.test(carded.model || ''),
       'the iPhone is named from its screen, which is the only place it says', carded.model);
     ok(carded.screen === '393×852 @3x', 'the measured panel is kept', carded.screen);
     ok(!!carded.local, "the visitor's own clock is shown", carded.local);

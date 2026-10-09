@@ -22,8 +22,15 @@
 
    Nothing here is shown to anybody; every failure is swallowed.
    ============================================================ */
-(function () {
+  (function () {
   'use strict';
+  /* The version of THIS file, stamped into every card it writes. It is
+     the only way to answer "is the phone running the code I just
+     pushed?" — a browser that cached an old copy of this script keeps
+     writing cards from it for as long as the cache holds, and the card
+     is the only evidence that reaches the owner. Bump it whenever this
+     file changes; the owner's page prints it beside the card. */
+  var BEACON_V = '20261009b';
   var CFG = (window.GB_CLOUD || {});
   if (!CFG.url || !CFG.anonKey) return;          /* no cloud configured */
 
@@ -319,6 +326,7 @@
 
   async function card() {
     var c = measured();
+    c.bv = BEACON_V;
     var id = ids();
     for (var k in id) if (Object.prototype.hasOwnProperty.call(id, k)) c[k] = id[k];
     var last = lastPage();
