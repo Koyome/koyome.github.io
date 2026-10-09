@@ -13,6 +13,63 @@
 
 ---
 
+## 0.46 第四十六轮速览（2026-10-09）：手机测不到新探测——真因是浏览器缓存，不是代码没上线
+
+用户原话：「我刚刚用手机测了一遍，新的ip记录没得新增的探测，我本地推送也没检测到新文件。」
+
+### 一、结论：推送是好的，是手机在跑 10-07 的旧脚本
+
+三份硬证据（都是查出来的，不是猜的）：
+
+1. **线上已是最新**：`curl https://koyome.github.io/js/visit-beacon.js` 与本地文件 `diff` **完全一致**；
+   线上 `i18n.js` 含 `visit_hz_measured`（只存在于 `df54952`），说明最后一次提交**已经上线**。
+2. **手机写的卡片只有 17 个字段**：直接查云端表最近 12 行，iPhone 行的 caps 是
+   `sh,sw,tz,vh,vw,dpr,mem,sid,cores,first,theme,touch,motion,visits,lastPage,lastDwell,lastScroll`
+   ——**没有** `hz / fcp / quota / depth / gamut / hdr / feat / net`。
+   而 `git show 7ee454e:docs/js/visit-beacon.js | grep -c gamut|hz|fcp|quota|feat|depth` 全部为 **0**：
+   这 17 个字段正好就是 **10-07 那个版本**能写出来的全部。手机一直在跑它。
+3. **服务端没问题**：拿真实那一行（sw=430 sh=932 dpr=3 cores=4）直接跑 `applyFacts`，
+   输出 `modelName = iPhone 15 Plus / 15 Pro Max / 16 Plus`、`cores = 6 / coresReported = 4`——正确。
+
+> 教训：**改了前端脚本，光 push 不够。** 页面里的 `?v=` 版本戳必须跟着变，
+> 否则手机会继续用缓存里那份旧脚本写数据，而数据看起来"像功能坏了"。
+
+### 二、为了让这件事下次一眼可见：探针版本号
+
+- `docs/js/visit-beacon.js` 顶部新增 `BEACON_V = '20261009b'`，写进每张卡片的 `caps.bv`。
+- `server.js` 的 `applyFacts` 把它带到行上 `row.bv`。
+- `docs/js/visits.js` 顶部 `BEACON_NOW`（**必须与 `BEACON_V` 同步**），名片底部打印
+  「探针版本 20261009b」；版本号不一致或**根本没有版本号**（10-07 及更早的卡片）时显示
+  「旧版 — 请在该设备上强制刷新」。
+- 样式 `.vs-card-v` 在 `docs/css/visits.css`。
+- i18n 新增 `visit_probe_v` / `visit_probe_old` 三语（430×3，审计 NO ISSUES）。
+
+### 三、顺带修掉两个错的 Apple 屏幕表条目（`server.js` 的 `APPLE_SCREENS`）
+
+| 原条目 | 问题 | 现为 |
+|---|---|---|
+| `[3, 1080, 1920, 'iPhone 7 / 8 Plus']` | 1080×1920 @3x 是 360×640，**没有任何 iPhone 用过**；真机 7/8 Plus 是 414×736 @3 = 1242×2208，从来没匹配上过 | `[3, 1242, 2208, 'iPhone 7 / 8 Plus']` |
+| `[3, 1290, 2796, '…15 / 16 Pro Max']` | 16 Pro Max 是 440×956（1320×2868），**不属于**这块屏 | `[3, 1290, 2796, 'iPhone 15 Plus / 15 Pro Max / 16 Plus']`，16 Pro Max 单列 `[3, 1320, 2868]` |
+| `[3, 1170, 2532, 'iPhone 12 / 13 / 14']` | 同屏还有 12 Pro / 13 Pro（都是 390×844） | `'iPhone 12 / 12 Pro / 13 / 13 Pro / 14'` |
+| `[3, 1179, 2556, 'iPhone 14 Pro / 15 / 16']` | 15 Pro 也是 393×852 | `'iPhone 14 Pro / 15 / 15 Pro / 16'` |
+| `[3, 1284, 2778, 'iPhone 12 / 13 Pro Max · 14 Plus']` | "iPhone 12" 读起来像普通版（实为 390×844） | `'iPhone 12 Pro Max / 13 Pro Max / 14 Plus'` |
+
+`APPLE_CORES` 的键同步改名，并补 `'iPhone 7 / 8 Plus': 4`（A10 Fusion 是四核）。
+
+### 四、验证（2026-10-09 实跑，全绿）
+
+`probe-ua` **293** 通过 / 0 失败（新增：探针版本写入、旧卡片不得被补版本号、430×932、414×736 两块屏）
+· `probe-visits` **56** · `probe-visits-page` **115** · `probe-visit-online` **18**
+· `audit-i18n` 430×3 NO ISSUES · `check-private-pages.js` **SAFE TO PUSH**
+
+### 五、待用户做的两步（AI 不能代劳）
+
+1. 双击桌面 `Koyome-Restart-Site.vbs`（`server.js` 又改了）。
+2. `git push`：本地 61 个提交待推送（提交 `17ac987`），**推送后手机上把页面整个关掉再重开**
+   （`?v=` 已统一刷成 `202610092338`，但 Safari 的旧标签页不会自己丢掉旧脚本）。
+
+---
+
 ## 0.45 第四十五轮速览（2026-10-09）：核数修复 + 名片扩展到 7 个新维度（全部实测/特性检测）
 
 用户原话：「处理器核数检测结果不准确：iPhone 15 Pro Max（A17 Pro 实为 6 核）只显示 4 核。请排查并修正
