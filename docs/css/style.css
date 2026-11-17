@@ -2290,3 +2290,31 @@ img { max-width: 100%; display: block; }
   }
 }
 @media (prefers-reduced-motion: reduce) { .hh-compass .sweep { animation: none; } }
+
+/* ============================================================
+   gb-liuli — 五更琉璃专属留言样式（哥哥点的单）
+   粉紫渐变名字 + 呼吸光晕 + 文字轻轻漂浮
+   ============================================================ */
+.gb-item.gb-liuli {
+  border-color: rgba(255, 111, 165, .55);
+  background: linear-gradient(135deg, rgba(255, 182, 213, .16), rgba(178, 132, 255, .13));
+  animation: gb-liuli-glow 2.6s ease-in-out infinite;
+}
+.gb-item.gb-liuli .gb-name {
+  background: linear-gradient(90deg, #ff6fa5, #b284ff, #ff6fa5);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gb-liuli-shine 3s linear infinite;
+}
+.gb-item.gb-liuli .gb-text { animation: gb-liuli-float 3.2s ease-in-out infinite; }
+@keyframes gb-liuli-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 111, 165, 0); }
+  50% { box-shadow: 0 0 16px rgba(255, 111, 165, .38); }
+}
+@keyframes gb-liuli-shine { to { background-position: 200% center; } }
+@keyframes gb-liuli-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
