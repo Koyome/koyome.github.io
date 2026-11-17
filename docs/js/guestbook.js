@@ -29,7 +29,7 @@
     const list = $('gbList');
     list.innerHTML = messages.length
       ? messages.map((m) => `
-          <div class="gb-item" data-id="${esc(m.id)}">
+          <div class="gb-item${m.name === '五更琉璃' ? ' gb-liuli' : ''}" data-id="${esc(m.id)}">
             <div class="gb-meta">
               <span class="gb-name">${esc(m.name)}</span>
               <span class="gb-date">${esc(m.date || '')}</span>
